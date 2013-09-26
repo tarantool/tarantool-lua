@@ -19,22 +19,33 @@ extern "C" {
 
 #include <inttypes.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #define NUM_MAX         UINT32_MAX
 #define NUM64_MAX       UINT64_MAX
 
 static inline const char *
 ltnt_checkstring(lua_State *L, int narg, size_t *len) {
-	if (narg < lua_gettop(L) && narg > -lua_gettop(L) && !lua_isstring(L, narg))
+	if (!lua_isstring(L, narg))
 		luaL_error(L, "RequesBuilder: Incorrect method call");
 	return lua_tolstring(L, narg, len);
 }
 
 static inline struct tp **
 ltnt_checkrequestbuilder(lua_State *L, int narg) {
-	if (narg < lua_gettop(L) && narg > -lua_gettop(L))
-		luaL_error(L, "RequstBuilder: Incorrect method call");
 	return (struct tp **) luaL_checkudata(L, narg, "tarantool.RequestBuilder");
+}
+
+static int ltnt_pushtuple(lua_State *L, struct tp **iproto, int narg) {
+	if (narg < 0)
+		narg = lua_gettop(L) + narg + 1;
+	lua_pushnil(L);
+	while(lua_next(L, narg) != 0) {
+		size_t len = 0;
+		const void *str = ltnt_checkstring(L, -1, &len);
+		tp_field(*iproto, (const void *)str, len);
+		lua_pop(L, 1);
+	}
 }
 
 /*
@@ -83,16 +94,7 @@ int ltnt_requestbuilder_insert(struct lua_State *L) {
 	tp_insert(iproto[0], space, flags);
 	tp_reqid(*iproto, reqid);
 	tp_tuple(*iproto);
-	ptrdiff_t i = 0;
-	for (;; ++i) {
-		lua_pushinteger(L, i);
-		lua_gettable(L, -2);
-		size_t len = 0;
-		if (lua_isnil(L, -1))
-			break;
-		const char *str = lua_tolstring(L, -1, &len);
-		tp_field(*iproto, (const void *)str, len);
-	}
+	ltnt_pushtuple(L, iproto, 5);
 	return 0;
 }
 /*
@@ -130,25 +132,14 @@ int ltnt_requestbuilder_select(struct lua_State *L) {
 
 	tp_select(*iproto, space, index, offset, limit);
 	tp_reqid(*iproto, reqid);
-	ptrdiff_t i = 0, j = 0;
-	for(;; ++i) {
-		lua_pushinteger(L, i);
-		lua_gettable(L, -2);
-		if (lua_isnil(L, -1))
-			break;
+	lua_pushnil(L);
+	while (lua_next(L, 7) != 0) {
 		if (!lua_istable(L, -1))
 			luaL_error(L, "Bad table construction: (table expected, got %s)",
 					lua_typename(L, lua_type(L, -1)));
 		tp_tuple(*iproto);
-		for (;; ++j) {
-			lua_pushinteger(L, j);
-			lua_gettable(L, -2);
-			if (lua_isnil(L, -1))
-				break;
-			size_t len = 0;
-			const char *str = ltnt_checkstring(L, -1, &len);
-			tp_field(*iproto, (const void *)str, len);
-		}
+		ltnt_pushtuple(L, iproto, -1);
+		lua_pop(L, 1);
 	}
 	return 0;
 }
@@ -180,89 +171,10 @@ int ltnt_requestbuilder_delete(struct lua_State *L) {
 	tp_delete(*iproto, space, flags);
 	tp_reqid(*iproto, reqid);
 	tp_tuple(*iproto);
-	ptrdiff_t i = 0;
-	for (;; ++i) {
-		lua_pushinteger(L, i);
-		lua_gettable(L, -2);
-		size_t len = 0;
-		if (lua_isnil(L, -1))
-			break;
-		const char *str = ltnt_checkstring(L, -1, &len);
-		tp_field(*iproto, (const void *)str, len);
-	}
+	ltnt_pushtuple(L, iproto, 5);
 	return 0;
 }
 
-/*
- * Creating of UPDATE request.
- * Must be called with:
- * reqid: LUA_TNUMBER
- * space: LUA_TNUMBER
- * flags: LUA_TNUMBER
- * table: LUA_TTABLE as folowing:
- * { val_1, val_2, ... }
- * where val_N is converted to binary
- * string representation of value
- * ops  : LUA_TTABLE as following:
- * { 0 : {OP, field, data}
- *   1 : {SPLICE, field, offset, cut, data}
- *   ...
- * }
- *
- * returns LUA_TSTRING with binary packed request
-*/
-
-int parse_op(struct lua_State *L) {
-	lua_pushnil(L);
-	lua_next(L, -2);
-	lua_tointeger(L, -1);
-
-}
-//TODO
-int parse_tuple() {
-}
-//TODO: CHECK_TUPLE
-//
-
-int ltnt_requestbuilder_insert(struct lua_State *L) {
-	if (lua_gettop(L) != 6)
-		luaL_error(L, "bad number of arguments (5 expected, got %d)",
-				lua_gettop(L) - 1);
-	struct tp **iproto = ltnt_checkrequestbuilder(L, 1);
-	uint32_t reqid = (uint32_t )luaL_checkint(L, 2);
-	uint32_t space = (uint32_t )luaL_checkint(L, 3);
-	uint32_t flags = (uint32_t )luaL_checknumber(L, 4);
-	if (!lua_istable(L, 5))
-		luaL_error(L, "Bad argument #4: (table expected, got %s)",
-				lua_typename(L, lua_type(L, 5)));
-
-	tp_insert(iproto[0], space, flags);
-	tp_reqid(*iproto, reqid);
-	tp_tuple(*iproto);
-	ptrdiff_t i = 0;
-	for (;; ++i) {
-		lua_pushinteger(L, i);
-		lua_gettable(L, -2);
-		size_t len = 0;
-		if (lua_isnil(L, -1))
-			break;
-		const char *str = lua_tolstring(L, -1, &len);
-		tp_field(*iproto, (const void *)str, len);
-	}
-	if (!lua_istable(L, 6))
-		luaL_error(L, "Bad argument #5: (table expected, got %s)",
-			   lua_typename(L, lua_type(L, 6)));
-	lua_pushnil(L);
-	while(lua_next(L, 6) != 0) {
-		if (!lua_istable(L, 8))
-			luaL_error(L, "Bad operation: (table expected, got %s)",
-				   lua_typename(L, lua_type(L, 8)));
-		lua_pushnil(L);
-		while()
-	}
-	return 0;
-
-}
 /*
  * Creating of CALL request.
  * Must be called with:
@@ -288,16 +200,7 @@ int ltnt_requestbuilder_call(struct lua_State *L) {
 	tp_call(*iproto, 0, name, name_size);
 	tp_reqid(*iproto, reqid);
 	tp_tuple(*iproto);
-	ptrdiff_t i = 0;
-	for (;; ++i) {
-		lua_pushinteger(L, i);
-		lua_gettable(L, -2);
-		size_t len = 0;
-		if (lua_isnil(L, -1))
-			break;
-		const char *str = ltnt_checkstring(L, -1, &len);
-		tp_field(*iproto, (const void *)str, len);
-	}
+	ltnt_pushtuple(L, iproto, 4);
 	return 0;
 }
 
@@ -341,7 +244,7 @@ static const struct luaL_Reg ltnt_requestbuilder_meta[] = {
 	{ "insert"	,ltnt_requestbuilder_insert	},
 	{ "select"	,ltnt_requestbuilder_select	},
 	{ "delete"	,ltnt_requestbuilder_delete	},
-	{ "update"	,ltnt_requestbuilder_update	},
+//	{ "update"	,ltnt_requestbuilder_update	},
 	{ "call"	,ltnt_requestbuilder_call	},
 	{ "getvalue"	,ltnt_requestbuilder_getval	},
 	{ "flush"	,ltnt_requestbuilder_flush	},
@@ -354,24 +257,19 @@ static const struct luaL_Reg ltnt_requestbuilder_meta[] = {
  */
 int ltnt_requestbuilder_open(lua_State *L) {
 	luaL_newmetatable(L, "tarantool.RequestBuilder");
-	luaL_newmetatable(L, "tarantool.ResponseParser");
-	luaL_newlib(L, ltnt_requestbuilder);
+	lua_pushvalue(L, -1);
+	lua_setfield(L, -2, "__index");
+	luaL_setfuncs(L, ltnt_requestbuilder_meta, 0);
 	return 1;
 }
-int ltnt_init(struct lua_State *L) {
+
+int luaopen_lua_tarantool(struct lua_State *L) {
 
 	ltnt_requestbuilder_open(L);
-	luaL_newmetatable(L, "tarantool_connection");
-	lua_pushvalue(L, -1);
-	lua_pushstring(L, "tarantool_connection");
-	lua_setfield(L, -2, "__metatable");
-	luaL_register(L, NULL, ltnt_requestbuilder_meta);
-	lua_pop(L, 1);
+	luaL_newlib(L, ltnt_requestbuilder);
 	/*
 	 * Register other functions
 	*/
-
-	lua_pop(L, 1);
-	return 0;
+	return 1;
 }
 
