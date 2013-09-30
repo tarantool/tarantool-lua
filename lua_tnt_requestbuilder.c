@@ -213,31 +213,33 @@ int ltnt_requestbuilder_update(struct lua_State *L) {
 	if (!lua_istable(L, 6))
 		luaL_error(L, "Bad argument #5: (table expected, got %s)",
 				lua_typename(L, lua_type(L, 6)));
+	int ops = 6;
+	int opcur = 8;
 	tp_update(*iproto, space, flags);
 	tp_reqid(*iproto, reqid);
 	tp_tuple(*iproto);
 	ltnt_pushtuple(L, iproto, 5);
 	tp_updatebegin(*iproto);
 	lua_pushnil(L);
-	while (lua_next(L, 6) != 0) {
-		if (!lua_istable(L, -1))
+	while (lua_next(L, ops) != 0) {
+		if (!lua_istable(L, opcur))
 			luaL_error(L, "Bad table construction: (table expected, got %s)",
 					lua_typename(L, lua_type(L, -1)));
 		lua_pushnil(L);
-		lua_next(L, -2);
+		lua_next(L, opcur);
 		uint8_t op = (uint8_t )luaL_checkint(L, -1);
 		lua_pop(L, 1);
-		lua_next(L, -2);
+		lua_next(L, opcur);
 		uint32_t field = (uint32_t )luaL_checkint(L, -1);
 		lua_pop(L, 1);
-		lua_next(L, -2);
+		lua_next(L, opcur);
 		if (op == TNT_OP_SPLICE) {
 			uint32_t offset = (uint32_t )luaL_checkint(L, -1);
 			lua_pop(L, 1);
-			lua_next(L, -2);
+			lua_next(L, opcur);
 			uint32_t cut = (uint32_t )luaL_checkint(L, -1);
 			lua_pop(L, 1);
-			lua_next(L, -2);
+			lua_next(L, opcur);
 			size_t len = 0;
 			const char *data = ltnt_checkstring(L, -1, &len);
 			tp_opsplice(*iproto, field, offset, cut, data, len);
@@ -256,7 +258,7 @@ int ltnt_requestbuilder_update(struct lua_State *L) {
 			}
 			tp_op(*iproto, op, field, data, len);
 		}
-		lua_pop(L, 2);
+		lua_pop(L, 3);
 	}
 	return 0;
 }

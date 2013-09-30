@@ -27,6 +27,10 @@ ltnt_checkstring(lua_State *L, int narg, size_t *len) {
 
 inline struct tp **
 ltnt_checkrequestbuilder(lua_State *L, int narg) {
+	return (struct tp **) luaL_checkudata(L, narg, "tarantool.RequestParser");
+}
+inline struct tp **
+ltnt_checkrequestbuilder(lua_State *L, int narg) {
 	return (struct tp **) luaL_checkudata(L, narg, "tarantool.RequestBuilder");
 }
 

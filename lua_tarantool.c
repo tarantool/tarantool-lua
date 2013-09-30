@@ -27,15 +27,13 @@ extern "C" {
 
 static const struct luaL_Reg ltnt_requestresponse[] = {
 	{ "request_builder_new"	,ltnt_requestbuilder_new},
-//	{ "response_parser_new"	,ltnt_responseparser_new},
+	{ "response_parser_new"	,ltnt_responseparser_new},
 	{ NULL			,NULL			}
 };
 
 /*
 static const struct luaL_Reg ltnt_responseparser_meta[] = {
 	{ "parse"	,ltnt_responseparser_parse	},
-	{ "get_unused"	,ltnt_responseparser_end	},
-	{ "flush"	,ltnt_responseparser_flush	},
 	{ "__gc"	,ltnt_responseparser_gc		},
 	{ NULL		,NULL				}
 };
