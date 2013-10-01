@@ -19,16 +19,15 @@ extern "C" {
 #include <include/lua_tnt_responseparser.h>
 #include <include/lua_tnt_helper.h>
 
-int ltnt_response_former(lua_State *L) {
+int ltnt_response_checker(lua_State *L) {
 	ltnt_response_parser
-	struct tp **iproto = lua_userdata(L, -1);
-	if (len(buf) < 12)
-		return -1;
-	else
+	ssize_t resps = 0;
+	char *resp = (char *)ltnt_checkstring(L, 2, &resps);
 	
 }
 
 int ltnt_responseparser_parse(lua_State *L) {
+	lua_checkstack(L, 10);
 	struct tp **iproto = ltnt_checkresponseparser(L, 1);
 	ssize_t resps = 0;
 	char *resp = (char *)ltnt_checkstring(L, 2, &resps);
@@ -37,31 +36,50 @@ int ltnt_responseparser_parse(lua_State *L) {
 				" 12 bytes, got %d", resps);
 	tp_init(*iproto, resp, 12, NULL, NULL);
 	ssize_t required = tp_reqbuf(*tp, resp);
-	if (required > 0)
+	if (required + 12 != resps)
 		luaL_error(L, "ResponseParser: expected"
 				"%d bytes, got %d", resps+required, resps);
-	lua_pushtable(L, 0, 5);
+	tp_init(*iproto, resp, resps, NULL, NULL);
 	ssize_t  sc  = tp_reply(*iproto);
 	ssize_t  ec  = sc >> 8;
 	sc = sc & 0xFF;
 	uint32_t op  = tp_replyop(*iproto);
 	uint32_t cnt = tp_replycount(*iproto);
-	lua_pushstring(L, );
-	lua_pushnumber(L, sc);
-	lua_rawsetp(L, -2, "reply_code");
-	lua_pushnumber(L, op);
-	lua_rawsetp(L, -2, "operation_code");
-	lua_pushnumber(L, cnt);
-	lua_rawsetp(L, -2, "tuple_count");
+	lua_pushtable(L, 0, 5);
+	ltnt_pushsntable(L, -1, "reply_code", sc);
+	ltnt_pushsntable(L, -1, "operation_code", op);
+	ltnt_pushsntable(L, -1, "tuple_count", cnt);
+
 	if (sc != 0) {
+		lua_pushstring(L, "error");
 		lua_pushtable(L, 0, 2);
-		lua_pushnumber(L, ec);
-		lua_rawsetp(L, -2, "errcode");
+		ltnt_pushsntable(L, -1, "errcode", ec);
+		lua_pushstring(L, "errstr");
 		lua_pushstring(L, tp_replyerror(*iproto),
 				tp_replyerrorlen(*iproto));
-		lua_rawsetp(L, -2, "errstr");
+		lua_settable(L, -3);
+		lua_settable(L, -3);
+	} else {
+		lua_pushstring(L, "tuples");
+		lua_pushtable(L, 0, cnt);
+		ssize_t tup_num = 1;
+		while (tp_next(*iproto)) {
+			lua_pushnumber(L, tup_num);
+			lua_pushtable(L, tp_tuplecount(*iproto), 0);
+			ssize_t fld_num = 1;
+			while(tp_nextfield(&rep)) {
+				lua_pushnumber(L, fld_num);
+				lua_pushlstring(L, tp_getfield(*iproto),
+						tp_getfieldsize(*iproto));
+				lua_settable(L, -3);
+				fld_num++;
+			}
+			lua_settable(L, -2);
+			tup_num++;
+		}
+		lua_settable(L, -2);
 	}
-	lua_rawsetp(L, -2, "error");
+	return 1;
 }
 
 /* GC method for RequestParser `class` */
