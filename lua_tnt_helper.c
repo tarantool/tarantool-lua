@@ -19,22 +19,22 @@ extern "C" {
 
 
 inline const char *
-ltnt_checkstring(lua_State *L, int narg, size_t *len) {
+ltnt_checkstring(struct lua_State *L, int narg, size_t *len) {
 	if (!lua_isstring(L, narg))
 		luaL_error(L, "RequesBuilder: Incorrect method call");
 	return lua_tolstring(L, narg, len);
 }
 
 inline struct tp **
-ltnt_checkrequestbuilder(lua_State *L, int narg) {
-	return (struct tp **) luaL_checkudata(L, narg, "tarantool.RequestParser");
+ltnt_checkresponseparser(struct lua_State *L, int narg) {
+	return (struct tp **) luaL_checkudata(L, narg, "tarantool.ResponseParser");
 }
 inline struct tp **
-ltnt_checkrequestbuilder(lua_State *L, int narg) {
+ltnt_checkrequestbuilder(struct lua_State *L, int narg) {
 	return (struct tp **) luaL_checkudata(L, narg, "tarantool.RequestBuilder");
 }
 
-int ltnt_pushtuple(lua_State *L, struct tp **iproto, int narg) {
+int ltnt_pushtuple(struct lua_State *L, struct tp **iproto, int narg) {
 	if (narg < 0)
 		narg = lua_gettop(L) + narg + 1;
 	lua_pushnil(L);

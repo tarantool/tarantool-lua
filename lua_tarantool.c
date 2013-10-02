@@ -28,16 +28,17 @@ extern "C" {
 static const struct luaL_Reg ltnt_requestresponse[] = {
 	{ "request_builder_new"	,ltnt_requestbuilder_new},
 	{ "response_parser_new"	,ltnt_responseparser_new},
+	{ "get_body_len"	,ltnt_response_bodylen	},
 	{ NULL			,NULL			}
 };
 
-/*
+
 static const struct luaL_Reg ltnt_responseparser_meta[] = {
 	{ "parse"	,ltnt_responseparser_parse	},
 	{ "__gc"	,ltnt_responseparser_gc		},
 	{ NULL		,NULL				}
 };
-*/
+
 
 static const struct luaL_Reg ltnt_requestbuilder_meta[] = {
 	{ "ping"	,ltnt_requestbuilder_ping	},
@@ -66,18 +67,18 @@ int ltnt_requestbuilder_open(lua_State *L) {
 /*
  * Register 'ResponseParser' "class";
  */
-/*
-int ltnt_requestparser_open(lua_State *L) {
+
+int ltnt_responseparser_open(lua_State *L) {
 	luaL_newmetatable(L, "tarantool.ResponseParser");
 	lua_pushvalue(L, -1);
 	lua_setfield(L, -2, "__index");
 	luaL_setfuncs(L, ltnt_responseparser_meta, 0);
 	return 1;
 }
-*/
+
 int luaopen_lua_tarantool(struct lua_State *L) {
 	ltnt_requestbuilder_open(L);
-//	ltnt_responseparser_open(L);
+	ltnt_responseparser_open(L);
 	luaL_newlib(L, ltnt_requestresponse);
 	/*
 	 * Register other functions
