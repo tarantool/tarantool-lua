@@ -1,9 +1,8 @@
-tarantool = require 'lua_tarantool'
+local tarantool = require 'lua_tarantool'
+local socket = require "socket"
+local yaml = require "yaml"
 print("---------------- MODULE -----------------")
-print(tarantool)
-for key,value in pairs(tarantool) do 
-    print(key,value) 
-end
+io.write(yaml.dump(tarantool), '...\n')
 print("--------------- USERDATA ----------------")
 print("RB func : ", tarantool.request_builder_new)
 local rb = tarantool.request_builder_new()
@@ -56,31 +55,32 @@ rb:flush()
 
 print("-----------------------------------------")
 
-local socket = require "luasocket.socket"
 
-rb:insert(0, 0, 0x01, {"hell", "world"})
 local sock = socket.tcp()
+local rp = tarantool.response_parser_new()
+rb:insert(0, 0, 0x01, {"hel1", "world1"})
+rb:insert(0, 0, 0x01, {"hel2", "world1"})
+rb:insert(0, 0, 0x01, {"hel3", "world1"})
+rb:insert(0, 0, 0x01, {"hel4", "world1"})
+rb:select(0, 0, 1, 0, 1000, {{"world1"}})
+rb:select(0, 0, 2, 0, 1000, {{"world1"}})
 sock:connect('localhost', 33013)
 sock:send(rb:getvalue())
 local a = sock:receive("12")
 local b = sock:receive(tostring(tarantool.get_body_len(a)))
-local b = a .. b 
-local rp = tarantool.response_parser_new()
-ans = rp:parse(b)
-
-for key,value in pairs(ans) do 
-    print(key,value) 
-end
-if ans.error ~= nil then
-    for key,value in pairs(ans.error) do 
-        print(key,value) 
-    end
-end
-if ans.tuples ~= nil then
-    for key,value in pairs(ans.tuples) do 
-        print(key .. ": ")
-        for key1,value1 in pairs(ans.tuples[key]) do 
-            print(key1,value1) 
-        end 
-    end
-end
+io.write(yaml.dump(rp:parse(a .. b)), '...\n')
+local a = sock:receive("12")
+local b = sock:receive(tostring(tarantool.get_body_len(a)))
+io.write(yaml.dump(rp:parse(a .. b)), '...\n')
+local a = sock:receive("12")
+local b = sock:receive(tostring(tarantool.get_body_len(a)))
+io.write(yaml.dump(rp:parse(a .. b)), '...\n')
+local a = sock:receive("12")
+local b = sock:receive(tostring(tarantool.get_body_len(a)))
+io.write(yaml.dump(rp:parse(a .. b)), '...\n')
+local a = sock:receive("12")
+local b = sock:receive(tostring(tarantool.get_body_len(a)))
+io.write(yaml.dump(rp:parse(a .. b)), '...\n')
+local a = sock:receive("12")
+local b = sock:receive(tostring(tarantool.get_body_len(a)))
+io.write(yaml.dump(rp:parse(a .. b)), '...\n')

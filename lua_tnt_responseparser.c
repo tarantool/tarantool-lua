@@ -20,17 +20,17 @@ extern "C" {
 #include <include/lua_tnt_helper.h>
 
 int ltnt_response_bodylen(struct lua_State *L) {
-	ssize_t resps = 0;
+	size_t resps = 0;
 	char *resp = (char *)ltnt_checkstring(L, 1, &resps);
-/*	lua_pushnumber(L, (lua_Number )((uint32_t *)resp)[1]); */
-	lua_pushnumber(L, tp_reqbuf(resp, 12));
+	lua_pushnumber(L, (lua_Number )((uint32_t *)resp)[1]);
 	return 1;
 }
 
 int ltnt_responseparser_parse(struct lua_State *L) {
+	ssize_t stack_size = lua_gettop(L);
 	lua_checkstack(L, 10);
 	struct tp **iproto = ltnt_checkresponseparser(L, 1);
-	ssize_t resps = 0;
+	size_t resps = 0;
 	char *resp = (char *)ltnt_checkstring(L, 2, &resps);
 	/* Check HEADER_LEN */
 	if (resps < 12)
@@ -94,7 +94,7 @@ int ltnt_responseparser_gc(struct lua_State *L) {
 int ltnt_responseparser_new(struct lua_State *L) {
 	struct tp **iproto = lua_newuserdata(L, sizeof(struct tp*));
 	*iproto = (struct tp *)malloc(sizeof(struct tp));
-	luaL_getmetatable(L, "tarantool.ResponseParser");
+	luaL_getmetatable(L, "ResponseParser");
 	lua_setmetatable(L, -2);
 	return 1;
 }

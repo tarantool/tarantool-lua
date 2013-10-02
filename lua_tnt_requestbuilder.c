@@ -68,6 +68,7 @@ int ltnt_requestbuilder_insert(struct lua_State *L) {
 	ltnt_pushtuple(L, iproto, 5);
 	return 0;
 }
+
 /*
  * Creating of SELECT request.
  * Must be called with:
@@ -162,7 +163,7 @@ int ltnt_requestbuilder_call(struct lua_State *L) {
 				lua_gettop(L) - 1);
 	struct tp **iproto = ltnt_checkrequestbuilder(L, 1);
 	uint32_t reqid = (uint32_t )luaL_checkint(L, 2);
-	ssize_t name_size = 0;
+	size_t name_size = 0;
 	const char *name = ltnt_checkstring(L, 3, &name_size);
 	if (!lua_istable(L, 4))
 		luaL_error(L, "Bad argument #3: (table expected, got %s)",
@@ -193,12 +194,6 @@ int ltnt_requestbuilder_call(struct lua_State *L) {
  *
  * returns LUA_TSTRING with binary packed request
 */
-static int ltnt_requestbuilder_push_ops(struct lua_State *L, int narg) {
-	if (narg < 0)
-		narg = narg + lua_gettop(L) + 1;
-
-
-}
 int ltnt_requestbuilder_update(struct lua_State *L) {
 	if (lua_gettop(L) != 6)
 		luaL_error(L, "bad number of arguments (5 expected, got %d)",
@@ -289,7 +284,7 @@ int ltnt_requestbuilder_gc(lua_State *L) {
 int ltnt_requestbuilder_new(lua_State *L) {
 	struct tp **iproto = lua_newuserdata(L, sizeof(struct tp*));
 	*iproto = (struct tp *)malloc(sizeof(struct tp));
-	luaL_getmetatable(L, "tarantool.RequestBuilder");
+	luaL_getmetatable(L, "RequestBuilder");
 	lua_setmetatable(L, -2);
 	tp_init(*iproto, NULL, 0, tp_realloc, NULL);
 	return 1;
