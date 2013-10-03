@@ -5,15 +5,16 @@ CFLAGS		= -O2 -Wall -shared -fPIC -fexceptions $(LUA_CFLAGS) -I.
 LDFLAGS		= -shared -g $(LUA_LDFLAGS)
 
 CC 			= gcc
-OUTPUT		= lua_tarantool.so
+OUTPUT		= tnt.so
 
-OBJS = lua_tarantool.o \
-	   lua_tnt_helper.o \
-	   lua_tnt_requestbuilder.o \
-	   lua_tnt_responseparser.o 
+OBJS = tnt.o \
+	   tnt_helper.o \
+	   tnt_requestbuilder.o \
+	   tnt_responseparser.o 
 
-all: libs lua_tarantool
-	cp -f lua_tarantool.so test/
+all: $(OBJS)
+	$(CC) -o $(OUTPUT) $(LDFLAGS) ${OBJS}
+	cp -f tnt.so test/
 
 libs: yaml luasocket
 
@@ -25,9 +26,6 @@ luasocket:
 yaml:
 	make -C yaml all
 	mv -f yaml/yaml.so test/yaml.so
-
-lua_tarantool: $(OBJS)
-	$(CC) -o $(OUTPUT) $(LDFLAGS) ${OBJS}
 
 clean-all:
 	make -C luasocket clean

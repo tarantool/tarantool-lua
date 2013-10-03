@@ -16,8 +16,8 @@ extern "C" {
 #include <stdio.h>
 
 #include <tp/tp.h>
-#include <include/lua_tnt_requestbuilder.h>
-#include <include/lua_tnt_helper.h>
+#include <include/tnt_requestbuilder.h>
+#include <include/tnt_helper.h>
 
 /*
  * Creating of PING request.
@@ -284,8 +284,8 @@ int ltnt_requestbuilder_gc(lua_State *L) {
 int ltnt_requestbuilder_new(lua_State *L) {
 	struct tp **iproto = lua_newuserdata(L, sizeof(struct tp*));
 	*iproto = (struct tp *)malloc(sizeof(struct tp));
+	tp_init(*iproto, NULL, 0, tp_realloc, NULL);
 	luaL_getmetatable(L, "RequestBuilder");
 	lua_setmetatable(L, -2);
-	tp_init(*iproto, NULL, 0, tp_realloc, NULL);
 	return 1;
 }

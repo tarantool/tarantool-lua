@@ -15,11 +15,11 @@ extern "C" {
 #include <stdio.h>
 
 #include <tp/tp.h>
-#include <include/lua_tnt_helper.h>
+#include <include/tnt_helper.h>
 
 
-void ltnt_register_enum(struct lua_State *L, int narg,
-			const struct luatarantool_Enum *e,
+void lregister_enum(struct lua_State *L, int narg,
+			const struct tnt_Enum *e,
 			const char *str) {
 	if (narg < 0)
 		narg = lua_gettop(L) + narg + 1;
@@ -42,11 +42,11 @@ ltnt_checkstring(struct lua_State *L, int narg, size_t *len) {
 
 inline struct tp **
 ltnt_checkresponseparser(struct lua_State *L, int narg) {
-	return (struct tp **) luaL_checkudata(L, narg, "tarantool.ResponseParser");
+	return (struct tp **) luaL_checkudata(L, narg, "ResponseParser");
 }
 inline struct tp **
 ltnt_checkrequestbuilder(struct lua_State *L, int narg) {
-	return (struct tp **) luaL_checkudata(L, narg, "tarantool.RequestBuilder");
+	return (struct tp **) luaL_checkudata(L, narg, "RequestBuilder");
 }
 
 void ltnt_pushtuple(struct lua_State *L, struct tp **iproto, int narg) {

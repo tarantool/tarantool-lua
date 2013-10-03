@@ -21,11 +21,11 @@ extern "C" {
 #include <stdio.h>
 
 #include "tp/tp.h"
-#include "include/lua_tnt_helper.h"
-#include "include/lua_tnt_requestbuilder.h"
-#include "include/lua_tnt_responseparser.h"
+#include "include/tnt_helper.h"
+#include "include/tnt_requestbuilder.h"
+#include "include/tnt_responseparser.h"
 
-static const struct luatarantool_Enum ops[] = {
+static const struct tnt_Enum ops[] = {
 	{ "OP_SET"	,TNT_OP_SET		},
 	{ "OP_ADD"	,TNT_OP_ADD		},
 	{ "OP_AND"	,TNT_OP_AND		},
@@ -37,7 +37,7 @@ static const struct luatarantool_Enum ops[] = {
 	{ NULL		,0			}
 };
 
-static const struct luatarantool_Enum flags[] = {
+static const struct tnt_Enum flags[] = {
 	{ "RETURN_TUPLE",TNT_BOX_RETURN_TUPLE	},
 	{ "BOX_ADD"	,TNT_BOX_ADD		},
 	{ "BOX_REPLACE"	,TNT_BOX_REPLACE	},
@@ -45,20 +45,20 @@ static const struct luatarantool_Enum flags[] = {
 };
 
 
-static const struct luaL_Reg ltnt_requestresponse[] = {
+static const struct luaL_Reg lrequestresponse[] = {
 	{ "request_builder_new"	,ltnt_requestbuilder_new},
 	{ "response_parser_new"	,ltnt_responseparser_new},
 	{ "get_body_len"	,ltnt_response_bodylen	},
 	{ NULL			,NULL			}
 };
 
-static const struct luaL_Reg ltnt_responseparser_meta[] = {
+static const struct luaL_Reg lresponseparser_meta[] = {
 	{ "parse"	,ltnt_responseparser_parse	},
 	{ "__gc"	,ltnt_responseparser_gc		},
 	{ NULL		,NULL				}
 };
 
-static const struct luaL_Reg ltnt_requestbuilder_meta[] = {
+static const struct luaL_Reg lrequestbuilder_meta[] = {
 	{ "ping"	,ltnt_requestbuilder_ping	},
 	{ "insert"	,ltnt_requestbuilder_insert	},
 	{ "select"	,ltnt_requestbuilder_select	},
@@ -74,34 +74,35 @@ static const struct luaL_Reg ltnt_requestbuilder_meta[] = {
 /*
  * Register 'RequestBuilder' "class";
  */
-int ltnt_requestbuilder_open(lua_State *L) {
+int lrequestbuilder_open(lua_State *L) {
 	luaL_newmetatable(L, "RequestBuilder");
 	lua_pushvalue(L, -1);
 	lua_setfield(L, -2, "__index");
-	luaL_setfuncs(L, ltnt_requestbuilder_meta, 0);
+	luaL_setfuncs(L, lrequestbuilder_meta, 0);
 	return 1;
 }
 
 /*
  * Register 'ResponseParser' "class";
  */
-int ltnt_responseparser_open(lua_State *L) {
+int lresponseparser_open(lua_State *L) {
 	luaL_newmetatable(L, "ResponseParser");
 	lua_pushvalue(L, -1);
 	lua_setfield(L, -2, "__index");
-	luaL_setfuncs(L, ltnt_responseparser_meta, 0);
+	luaL_setfuncs(L, lresponseparser_meta, 0);
 	return 1;
 }
 
-int luaopen_lua_tarantool(struct lua_State *L) {
-	luaL_newlib(L, ltnt_requestresponse);
-	ltnt_requestbuilder_open(L);
-//	lua_setfield(L, 3, "RequestBuilder");
-	ltnt_responseparser_open(L);
-//	lua_setfield(L, 3, "ResponseParser");
-	lua_pop(L, 2);
-	ltnt_register_enum(L, -1, ops, "ops");
-	ltnt_register_enum(L, -1, flags, "flags");
+int luaopen_tnt(struct lua_State *L) {
+	printf("%d\n", lua_gettop(L));
+	luaL_newlib(L, lrequestresponse);
+	printf("%d\n", lua_gettop(L));
+	lrequestbuilder_open(L);
+	lua_setfield(L, 3, "RequestBuilder");
+	lresponseparser_open(L);
+	lua_setfield(L, 3, "ResponseParser");
+	lregister_enum(L, 3, ops, "ops");
+	lregister_enum(L, 3, flags, "flags");
 	/*
 	 * Register other functions
 	 */

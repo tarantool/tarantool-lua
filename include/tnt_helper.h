@@ -1,12 +1,12 @@
 #ifndef H_LUA_TNT_HELPER
 #define H_LUA_TNT_HELPER
-typedef struct luatarantool_Enum {
+typedef struct tnt_Enum {
 	const char *name;
 	const int val;
 } luatarantool_Enum;
 
-void ltnt_register_enum(struct lua_State *L, int narg,
-			const struct luatarantool_Enum *e,
+void lregister_enum(struct lua_State *L, int narg,
+			const struct tnt_Enum *e,
 			const char *str);
 
 inline const char *ltnt_checkstring(struct lua_State *L, int narg, size_t *len);

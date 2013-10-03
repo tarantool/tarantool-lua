@@ -16,8 +16,8 @@ extern "C" {
 #include <stdio.h>
 
 #include <tp/tp.h>
-#include <include/lua_tnt_responseparser.h>
-#include <include/lua_tnt_helper.h>
+#include <include/tnt_responseparser.h>
+#include <include/tnt_helper.h>
 
 int ltnt_response_bodylen(struct lua_State *L) {
 	size_t resps = 0;

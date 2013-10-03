@@ -1,4 +1,4 @@
-local tarantool = require 'lua_tarantool'
+local tarantool = require "tnt"
 local socket = require "socket"
 local yaml = require "yaml"
 
