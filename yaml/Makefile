@@ -20,13 +20,7 @@ INC=`pkg-config lua5.2 --cflags`
 OBJS=lyaml.o api.o dumper.o emitter.o loader.o parser.o reader.o scanner.o writer.o b64.o
 
 all:    yaml.so
-
-install:
-	cp -f yaml.so $(LUA_LIBDIR)
-
-uninstall:
-	rm -f $(LUA_LIBDIR)/yaml.so 
-        
+       
 yaml.so: $(OBJS)
 	$(CC) -o $@ $(LDFLAGS) $(OBJS)
 

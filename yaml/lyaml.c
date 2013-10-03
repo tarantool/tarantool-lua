@@ -92,7 +92,7 @@ static void generate_error_message(struct lua_yaml_loader *loader) {
    luaL_addstring(&b, buf);
 
    if (loader->parser.problem_mark.line || loader->parser.problem_mark.column) {
-      snprintf(buf, sizeof(buf), ", line: %d, column: %d\n",
+      snprintf(buf, sizeof(buf), ", line: %zu, column: %zu\n",
          loader->parser.problem_mark.line + 1,
          loader->parser.problem_mark.column + 1);
       luaL_addstring(&b, buf);
@@ -101,7 +101,7 @@ static void generate_error_message(struct lua_yaml_loader *loader) {
    }
 
    if (loader->parser.context) {
-      snprintf(buf, sizeof(buf), "%s at line: %d, column: %d\n",
+      snprintf(buf, sizeof(buf), "%s at line: %zu, column: %zu\n",
          loader->parser.context,
          loader->parser.context_mark.line + 1,
          loader->parser.context_mark.column + 1);
@@ -350,7 +350,7 @@ static int l_load(lua_State *L) {
 
    yaml_parser_initialize(&loader.parser);
    yaml_parser_set_input_string(&loader.parser,
-      (const unsigned char *)lua_tostring(L, 1), lua_strlen(L, 1));
+      (const unsigned char *)lua_tostring(L, 1), luaL_len(L, 1));
    load(&loader);
 
    delete_event(&loader);
@@ -470,7 +470,7 @@ static int dump_table(struct lua_yaml_dumper *dumper) {
 }
 
 static int dump_array(struct lua_yaml_dumper *dumper) {
-   int i, n = luaL_getn(dumper->L, -1);
+   int i, n = luaL_len(dumper->L, -1);
    yaml_event_t ev;
    yaml_char_t *anchor = get_yaml_anchor(dumper);
 
@@ -533,7 +533,7 @@ static int dump_node(struct lua_yaml_dumper *dumper) {
          type = figure_table_type(dumper->L);
 
       if (type == LUAYAML_KIND_UNKNOWN && Dump_Auto_Array &&
-          luaL_getn(dumper->L, -1) > 0) {
+          luaL_len(dumper->L, -1) > 0) {
          type = LUAYAML_KIND_SEQUENCE;
       }
 
@@ -569,7 +569,7 @@ static void dump_document(struct lua_yaml_dumper *dumper) {
    yaml_emitter_emit(&dumper->emitter, &ev);
 }
 
-static int append_output(void *arg, unsigned char *buf, unsigned int len) {
+static int append_output(void *arg, unsigned char *buf, size_t len) {
    struct lua_yaml_dumper *dumper = (struct lua_yaml_dumper *)arg;
    luaL_addlstring(&dumper->yamlbuf, (char *)buf, len);
    return 1;
@@ -709,7 +709,7 @@ static int l_null(lua_State *L) {
 }
 
 LUALIB_API int luaopen_yaml(lua_State *L) {
-   const luaL_reg yamllib[] = {
+   const luaL_Reg yamllib[] = {
       { "load", l_load },
       { "dump", l_dump },
       { "configure", l_config },
@@ -717,6 +717,6 @@ LUALIB_API int luaopen_yaml(lua_State *L) {
       { NULL, NULL}
    };
 
-   luaL_openlib(L, "yaml", yamllib, 0);
+   luaL_newlib(L, yamllib);
    return 1;
 }

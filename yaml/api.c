@@ -1119,6 +1119,7 @@ yaml_document_delete(yaml_document_t *document)
     struct {
         yaml_error_type_t error;
     } context;
+    (void)context;
     yaml_tag_directive_t *tag_directive;
 
     context.error = YAML_NO_ERROR;  /* Eliminate a compliler warning. */
