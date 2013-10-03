@@ -35,7 +35,8 @@ void ltnt_register_enum(struct lua_State *L, int narg,
 inline const char *
 ltnt_checkstring(struct lua_State *L, int narg, size_t *len) {
 	if (!lua_isstring(L, narg))
-		luaL_error(L, "RequesBuilder: Incorrect method call");
+		luaL_error(L, "Incorrect method call (expected string, got %s)",
+				lua_typename(L, lua_type(L, narg)));
 	return lua_tolstring(L, narg, len);
 }
 

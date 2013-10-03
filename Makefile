@@ -12,7 +12,10 @@ OBJS = lua_tarantool.o \
 	   lua_tnt_requestbuilder.o \
 	   lua_tnt_responseparser.o 
 
-all: lib luasocket test
+all: libs lua_tarantool
+	cp -f lua_tarantool.so test/
+
+libs: yaml luasocket
 
 luasocket:
 	make -C luasocket all
@@ -23,7 +26,7 @@ yaml:
 	make -C yaml all
 	mv -f yaml/yaml.so test/yaml.so
 
-lib: $(OBJS)
+lua_tarantool: $(OBJS)
 	$(CC) -o $(OUTPUT) $(LDFLAGS) ${OBJS}
 
 clean-all:
@@ -38,4 +41,4 @@ clean:
 test:
 	lua test/test.lua
 
-.PHONY: luasocket test
+.PHONY: luasocket yaml test

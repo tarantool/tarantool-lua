@@ -55,7 +55,6 @@ static const struct luaL_Reg ltnt_requestresponse[] = {
 static const struct luaL_Reg ltnt_responseparser_meta[] = {
 	{ "parse"	,ltnt_responseparser_parse	},
 	{ "__gc"	,ltnt_responseparser_gc		},
-	{ "__call"	,ltnt_responseparser_new	},
 	{ NULL		,NULL				}
 };
 
@@ -69,7 +68,6 @@ static const struct luaL_Reg ltnt_requestbuilder_meta[] = {
 	{ "getvalue"	,ltnt_requestbuilder_getval	},
 	{ "flush"	,ltnt_requestbuilder_flush	},
 	{ "__gc"	,ltnt_requestbuilder_gc		},
-	{ "__call"	,ltnt_requestbuilder_new	},
 	{ NULL		,NULL				}
 };
 
@@ -98,11 +96,12 @@ int ltnt_responseparser_open(lua_State *L) {
 int luaopen_lua_tarantool(struct lua_State *L) {
 	luaL_newlib(L, ltnt_requestresponse);
 	ltnt_requestbuilder_open(L);
-	lua_setfield(L, 3, "RequestBuilder");
+//	lua_setfield(L, 3, "RequestBuilder");
 	ltnt_responseparser_open(L);
-	lua_setfield(L, 3, "ResponseParser");
-	ltnt_register_enum(L, 3, ops, "ops");
-	ltnt_register_enum(L, 3, flags, "flags");
+//	lua_setfield(L, 3, "ResponseParser");
+	lua_pop(L, 2);
+	ltnt_register_enum(L, -1, ops, "ops");
+	ltnt_register_enum(L, -1, flags, "flags");
 	/*
 	 * Register other functions
 	 */

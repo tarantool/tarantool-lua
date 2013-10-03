@@ -1,14 +1,9 @@
-
-#if HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #define YAML_VERSION_MAJOR 0
 #define YAML_VERSION_MINOR 1
 #define YAML_VERSION_PATCH 3
 #define YAML_VERSION_STRING "0.1.3"
 
-#include <yaml.h>
+#include "yaml.h"
 
 #include <assert.h>
 #include <limits.h>
