@@ -1091,7 +1091,7 @@ tp_nextfield(struct tp *p) {
 	if (tp_unlikely(! tp_hasnextfield(p)))
 		return 0;
 	p->f += p->fsz;
-fetch:;
+fetch: ;
 	register int rc = tp_ber128load(p, &p->fsz);
 	if (tp_unlikely(rc == -1))
 		return -1;

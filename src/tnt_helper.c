@@ -14,7 +14,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
-#include <tp/tp.h>
+#include <3rdparty/tp/tp.h>
 #include <include/tnt_helper.h>
 
 
@@ -49,16 +49,18 @@ ltnt_checkrequestbuilder(struct lua_State *L, int narg) {
 	return (struct tp **) luaL_checkudata(L, narg, "RequestBuilder");
 }
 
-void ltnt_pushtuple(struct lua_State *L, struct tp **iproto, int narg) {
+int ltnt_pushtuple(struct lua_State *L, struct tp **iproto, int narg) {
 	if (narg < 0)
 		narg = lua_gettop(L) + narg + 1;
 	lua_pushnil(L);
 	while(lua_next(L, narg) != 0) {
 		size_t len = 0;
 		const void *str = ltnt_checkstring(L, -1, &len);
-		tp_field(*iproto, (const void *)str, len);
+		if (tp_field(*iproto, (const void *)str, len) == -1)
+			return -1;
 		lua_pop(L, 1);
 	}
+	return 0;
 }
 
 inline void ltnt_pushsntable(lua_State *L, int narg, const char *str, int num) {

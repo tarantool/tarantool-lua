@@ -20,10 +20,10 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
-#include "tp/tp.h"
-#include "include/tnt_helper.h"
-#include "include/tnt_requestbuilder.h"
-#include "include/tnt_responseparser.h"
+#include <3rdparty/tp/tp.h>
+#include <include/tnt_helper.h>
+#include <include/tnt_requestbuilder.h>
+#include <include/tnt_responseparser.h>
 
 static const struct tnt_Enum ops[] = {
 	{ "OP_SET"	,TNT_OP_SET		},
@@ -94,9 +94,7 @@ int lresponseparser_open(lua_State *L) {
 }
 
 int luaopen_tnt(struct lua_State *L) {
-	printf("%d\n", lua_gettop(L));
 	luaL_newlib(L, lrequestresponse);
-	printf("%d\n", lua_gettop(L));
 	lrequestbuilder_open(L);
 	lua_setfield(L, 3, "RequestBuilder");
 	lresponseparser_open(L);

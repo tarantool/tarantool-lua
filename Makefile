@@ -7,10 +7,10 @@ LDFLAGS		= -shared -g $(LUA_LDFLAGS)
 CC 			= gcc
 OUTPUT		= tnt.so
 
-OBJS = tnt.o \
-	   tnt_helper.o \
-	   tnt_requestbuilder.o \
-	   tnt_responseparser.o 
+OBJS = src/tnt.o \
+	   src/tnt_helper.o \
+	   src/tnt_requestbuilder.o \
+	   src/tnt_responseparser.o
 
 all: $(OBJS)
 	$(CC) -o $(OUTPUT) $(LDFLAGS) ${OBJS}
@@ -19,22 +19,23 @@ all: $(OBJS)
 libs: yaml luasocket
 
 luasocket:
-	make -C luasocket all
-	cp -f luasocket/socket.lua test/socket.lua
-	mv -f luasocket/socket.so.3.0-rc1 test/socket.so
+	make -C 3rdparty/luasocket all
+	cp -f 3rdparty/luasocket/socket.lua test/socket.lua
+	mv -f 3rdparty/luasocket/socket.so.3.0-rc1 test/socket.so
 
 yaml:
-	make -C yaml all
-	mv -f yaml/yaml.so test/yaml.so
+	make -C 3rdparty/yaml all
+	mv -f 3rdparty/yaml/yaml.so test/yaml.so
 
 clean-all:
-	make -C luasocket clean
-	make -C yaml clean
+	make -C 3rdparty/luasocket clean
+	make -C 3rdparty/yaml clean
 	make clean
 
 clean:
 	rm -f test/*.so
-	rm -f *.o
+	rm *.so
+	rm -f $(OBJS)
 
 test:
 	lua test/test.lua

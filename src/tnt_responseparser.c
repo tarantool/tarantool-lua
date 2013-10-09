@@ -15,7 +15,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
-#include <tp/tp.h>
+#include <3rdparty/tp/tp.h>
 #include <include/tnt_responseparser.h>
 #include <include/tnt_helper.h>
 
@@ -46,6 +46,10 @@ int ltnt_responseparser_parse(struct lua_State *L) {
 	ssize_t  ec  = sc >> 8;
 	sc = sc & 0xFF;
 	uint32_t op  = tp_replyop(*iproto);
+	if (op == -1) {
+		lua_pushstring(L, "tp.h bad answer");
+		return 1;
+	}
 	uint32_t cnt = tp_replycount(*iproto);
 	lua_createtable(L, 0, 5);
 	ltnt_pushsntable(L, -1, "reply_code", sc);

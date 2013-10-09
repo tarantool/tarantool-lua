@@ -15,7 +15,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdio.h>
 
-#include <tp/tp.h>
+#include <3rdparty/tp/tp.h>
 #include <include/tnt_requestbuilder.h>
 #include <include/tnt_helper.h>
 
@@ -32,7 +32,10 @@ int ltnt_requestbuilder_ping(struct lua_State *L) {
 				lua_gettop(L) - 1);
 	struct tp **iproto = ltnt_checkrequestbuilder(L, 1);
 	uint32_t reqid = (uint32_t )luaL_checkint(L, 2);
-	tp_ping(*iproto);
+	if (tp_ping(*iproto) == -1) {
+		lua_pushstring(L, "tp.h memory error");
+		return 1;
+	}
 	tp_reqid(*iproto, reqid);
 	return 0;
 }
@@ -62,10 +65,13 @@ int ltnt_requestbuilder_insert(struct lua_State *L) {
 		luaL_error(L, "Bad argument #4: (table expected, got %s)",
 				lua_typename(L, lua_type(L, 5)));
 
-	tp_insert(iproto[0], space, flags);
+	if (tp_insert(iproto[0], space, flags) == -1 ||
+	    tp_tuple(*iproto) == -1 ||
+	    ltnt_pushtuple(L, iproto, 5) == -1 ) {
+		lua_pushstring(L, "tp.h memory error");
+		return 1;
+	}
 	tp_reqid(*iproto, reqid);
-	tp_tuple(*iproto);
-	ltnt_pushtuple(L, iproto, 5);
 	return 0;
 }
 
@@ -102,15 +108,21 @@ int ltnt_requestbuilder_select(struct lua_State *L) {
 		luaL_error(L, "Bad argument #6: (table expected, got %s)",
 				lua_typename(L, lua_type(L, 7)));
 
-	tp_select(*iproto, space, index, offset, limit);
+	if (tp_select(*iproto, space, index, offset, limit)){
+		lua_pushstring(L, "tp.h memory error");
+		return 1;
+	}
 	tp_reqid(*iproto, reqid);
 	lua_pushnil(L);
 	while (lua_next(L, 7) != 0) {
 		if (!lua_istable(L, -1))
 			luaL_error(L, "Bad table construction: (table expected, got %s)",
 					lua_typename(L, lua_type(L, -1)));
-		tp_tuple(*iproto);
-		ltnt_pushtuple(L, iproto, -1);
+		if (tp_tuple(*iproto) == -1 ||
+		    ltnt_pushtuple(L, iproto, -1) == -1) {
+			lua_pushstring(L, "tp.h memory error");
+			return 1;
+		}
 		lua_pop(L, 1);
 	}
 	return 0;
@@ -140,10 +152,13 @@ int ltnt_requestbuilder_delete(struct lua_State *L) {
 	if (!lua_istable(L, 5))
 		luaL_error(L, "Bad argument #4: (table expected, got %s)",
 				lua_typename(L, lua_type(L, 5)));
-	tp_delete(*iproto, space, flags);
+	if (tp_delete(*iproto, space, flags) == -1 ||
+	    tp_tuple(*iproto) == -1 ||
+	    ltnt_pushtuple(L, iproto, 5) == -1) {
+		lua_pushstring(L, "tp.h memory error");
+		return 1;
+	}
 	tp_reqid(*iproto, reqid);
-	tp_tuple(*iproto);
-	ltnt_pushtuple(L, iproto, 5);
 	return 0;
 }
 
@@ -169,10 +184,13 @@ int ltnt_requestbuilder_call(struct lua_State *L) {
 		luaL_error(L, "Bad argument #3: (table expected, got %s)",
 				lua_typename(L, lua_type(L, 4)));
 
-	tp_call(*iproto, 0, name, name_size);
+	if (tp_call(*iproto, 0, name, name_size) == -1||
+	    tp_tuple(*iproto) == -1 ||
+	    ltnt_pushtuple(L, iproto, 4) == -1) {
+		lua_pushstring(L, "tp.h memory error");
+		return 1;
+	}
 	tp_reqid(*iproto, reqid);
-	tp_tuple(*iproto);
-	ltnt_pushtuple(L, iproto, 4);
 	return 0;
 }
 
@@ -210,11 +228,14 @@ int ltnt_requestbuilder_update(struct lua_State *L) {
 				lua_typename(L, lua_type(L, 6)));
 	int ops = 6;
 	int opcur = 8;
-	tp_update(*iproto, space, flags);
+	if (tp_update(*iproto, space, flags) == -1 ||
+	    tp_tuple(*iproto) == -1 ||
+	    ltnt_pushtuple(L, iproto, 5) == -1 ||
+	    tp_updatebegin(*iproto) == -1) {
+		lua_pushstring(L, "tp.h memory error");
+		return 1;
+	}
 	tp_reqid(*iproto, reqid);
-	tp_tuple(*iproto);
-	ltnt_pushtuple(L, iproto, 5);
-	tp_updatebegin(*iproto);
 	lua_pushnil(L);
 	while (lua_next(L, ops) != 0) {
 		if (!lua_istable(L, opcur))
@@ -237,7 +258,11 @@ int ltnt_requestbuilder_update(struct lua_State *L) {
 			lua_next(L, opcur);
 			size_t len = 0;
 			const char *data = ltnt_checkstring(L, -1, &len);
-			tp_opsplice(*iproto, field, offset, cut, data, len);
+			if (tp_opsplice(*iproto, field, offset,
+					cut, data, len) == -1) {
+				lua_pushstring(L, "tp.h memory error");
+				return 1;
+			}
 		}
 		else {
 			const char *data = NULL;
@@ -251,7 +276,10 @@ int ltnt_requestbuilder_update(struct lua_State *L) {
 				luaL_error(L, "Bad op argument: (string or number expected, got %s)",
 					lua_typename(L, lua_type(L, -1)));
 			}
-			tp_op(*iproto, op, field, data, len);
+			if (tp_op(*iproto, op, field, data, len) == -1) {
+				lua_pushstring(L, "tp.h memory error");
+				return 1;
+			}
 		}
 		lua_pop(L, 3);
 	}
