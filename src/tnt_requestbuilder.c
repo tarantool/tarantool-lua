@@ -33,11 +33,14 @@ int ltnt_requestbuilder_ping(struct lua_State *L) {
 	struct tp **iproto = ltnt_checkrequestbuilder(L, 1);
 	uint32_t reqid = (uint32_t )luaL_checkint(L, 2);
 	if (tp_ping(*iproto) == -1) {
+		lua_pushboolean(L, 0);
 		lua_pushstring(L, "tp.h memory error");
-		return 1;
+		return 2;
 	}
 	tp_reqid(*iproto, reqid);
-	return 0;
+	lua_pushboolean(L, 1);
+	lua_pushnil(L);
+	return 2;
 }
 
 /*
@@ -69,10 +72,13 @@ int ltnt_requestbuilder_insert(struct lua_State *L) {
 	    tp_tuple(*iproto) == -1 ||
 	    ltnt_pushtuple(L, iproto, 5) == -1 ) {
 		lua_pushstring(L, "tp.h memory error");
-		return 1;
+		lua_pushboolean(L, 0);
+		return 2;
 	}
 	tp_reqid(*iproto, reqid);
-	return 0;
+	lua_pushboolean(L, 1);
+	lua_pushnil(L);
+	return 2;
 }
 
 /*
@@ -109,8 +115,9 @@ int ltnt_requestbuilder_select(struct lua_State *L) {
 				lua_typename(L, lua_type(L, 7)));
 
 	if (tp_select(*iproto, space, index, offset, limit)){
+		lua_pushboolean(L, 0);
 		lua_pushstring(L, "tp.h memory error");
-		return 1;
+		return 2;
 	}
 	tp_reqid(*iproto, reqid);
 	lua_pushnil(L);
@@ -120,12 +127,15 @@ int ltnt_requestbuilder_select(struct lua_State *L) {
 					lua_typename(L, lua_type(L, -1)));
 		if (tp_tuple(*iproto) == -1 ||
 		    ltnt_pushtuple(L, iproto, -1) == -1) {
+			lua_pushboolean(L, 0);
 			lua_pushstring(L, "tp.h memory error");
-			return 1;
+			return 2;
 		}
 		lua_pop(L, 1);
 	}
-	return 0;
+	lua_pushboolean(L, 1);
+	lua_pushnil(L);
+	return 2;
 }
 
 /*
@@ -155,11 +165,14 @@ int ltnt_requestbuilder_delete(struct lua_State *L) {
 	if (tp_delete(*iproto, space, flags) == -1 ||
 	    tp_tuple(*iproto) == -1 ||
 	    ltnt_pushtuple(L, iproto, 5) == -1) {
+		lua_pushboolean(L, 0);
 		lua_pushstring(L, "tp.h memory error");
-		return 1;
+		return 2;
 	}
 	tp_reqid(*iproto, reqid);
-	return 0;
+	lua_pushboolean(L, 1);
+	lua_pushnil(L);
+	return 2;
 }
 
 /*
@@ -187,11 +200,14 @@ int ltnt_requestbuilder_call(struct lua_State *L) {
 	if (tp_call(*iproto, 0, name, name_size) == -1||
 	    tp_tuple(*iproto) == -1 ||
 	    ltnt_pushtuple(L, iproto, 4) == -1) {
+		lua_pushboolean(L, 0);
 		lua_pushstring(L, "tp.h memory error");
-		return 1;
+		return 2;
 	}
 	tp_reqid(*iproto, reqid);
-	return 0;
+	lua_pushboolean(L, 1);
+	lua_pushnil(L);
+	return 2;
 }
 
 /*
@@ -232,8 +248,9 @@ int ltnt_requestbuilder_update(struct lua_State *L) {
 	    tp_tuple(*iproto) == -1 ||
 	    ltnt_pushtuple(L, iproto, 5) == -1 ||
 	    tp_updatebegin(*iproto) == -1) {
+		lua_pushboolean(L, 0);
 		lua_pushstring(L, "tp.h memory error");
-		return 1;
+		return 2;
 	}
 	tp_reqid(*iproto, reqid);
 	lua_pushnil(L);
@@ -260,8 +277,9 @@ int ltnt_requestbuilder_update(struct lua_State *L) {
 			const char *data = ltnt_checkstring(L, -1, &len);
 			if (tp_opsplice(*iproto, field, offset,
 					cut, data, len) == -1) {
+				lua_pushboolean(L, 0);
 				lua_pushstring(L, "tp.h memory error");
-				return 1;
+				return 2;
 			}
 		}
 		else {
@@ -277,13 +295,16 @@ int ltnt_requestbuilder_update(struct lua_State *L) {
 					lua_typename(L, lua_type(L, -1)));
 			}
 			if (tp_op(*iproto, op, field, data, len) == -1) {
+				lua_pushboolean(L, 0);
 				lua_pushstring(L, "tp.h memory error");
-				return 1;
+				return 2;
 			}
 		}
 		lua_pop(L, 3);
 	}
-	return 0;
+	lua_pushboolean(L, 1);
+	lua_pushnil(L);
+	return 2;
 }
 
 /* Get request for RequestBuilder `class` */

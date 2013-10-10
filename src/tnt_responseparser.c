@@ -27,7 +27,6 @@ int ltnt_response_bodylen(struct lua_State *L) {
 }
 
 int ltnt_responseparser_parse(struct lua_State *L) {
-	ssize_t stack_size = lua_gettop(L);
 	lua_checkstack(L, 10);
 	struct tp **iproto = ltnt_checkresponseparser(L, 1);
 	size_t resps = 0;
@@ -43,18 +42,19 @@ int ltnt_responseparser_parse(struct lua_State *L) {
 				" %d bytes, got %d", resps+required, resps);
 	tp_init(*iproto, resp, resps, NULL, NULL);
 	ssize_t  sc  = tp_reply(*iproto);
-	ssize_t  ec  = sc >> 8;
-	sc = sc & 0xFF;
-	uint32_t op  = tp_replyop(*iproto);
-	if (op == -1) {
+	if (sc == -1) {
+		lua_pushboolean(L, 0);
 		lua_pushstring(L, "tp.h bad answer");
-		return 1;
+		return 2;
 	}
-	uint32_t cnt = tp_replycount(*iproto);
+	ssize_t ec  = sc >> 8;
+	sc = sc & 0xFF;
+	lua_pushboolean(L, 1);
 	lua_createtable(L, 0, 5);
 	ltnt_pushsntable(L, -1, "reply_code", sc);
-	ltnt_pushsntable(L, -1, "operation_code", op);
-	ltnt_pushsntable(L, -1, "tuple_count", cnt);
+	ltnt_pushsntable(L, -1, "operation_code", tp_replyop(*iproto));
+	ltnt_pushsntable(L, -1, "tuple_count", tp_replycount(*iproto));
+	ltnt_pushsntable(L, -1, "request_id", tp_getreqid(*iproto));
 
 	if (sc != 0) {
 		lua_pushstring(L, "error");
@@ -67,7 +67,7 @@ int ltnt_responseparser_parse(struct lua_State *L) {
 		lua_settable(L, -3);
 	} else {
 		lua_pushstring(L, "tuples");
-		lua_createtable(L, 0, cnt);
+		lua_createtable(L, 0, tp_replycount(*iproto));
 		ssize_t tup_num = 1;
 		while (tp_next(*iproto)) {
 			lua_pushnumber(L, tup_num);
@@ -85,7 +85,7 @@ int ltnt_responseparser_parse(struct lua_State *L) {
 		}
 		lua_settable(L, -3);
 	}
-	return 1;
+	return 2;
 }
 
 /* GC method for ResponseParser `class` */
