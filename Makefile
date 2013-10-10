@@ -16,16 +16,19 @@ all: $(OBJS)
 	$(CC) -o $(OUTPUT) $(LDFLAGS) ${OBJS}
 	cp -f tnt.so test/
 
-libs: yaml luasocket
+libs: yaml luasocket telescope
 
 luasocket:
 	make -C 3rdparty/luasocket all
 	cp -f 3rdparty/luasocket/socket.lua test/socket.lua
-	mv -f 3rdparty/luasocket/socket.so.3.0-rc1 test/socket.so
+	cp -f 3rdparty/luasocket/socket.so.3.0-rc1 test/socket.so
 
 yaml:
 	make -C 3rdparty/yaml all
-	mv -f 3rdparty/yaml/yaml.so test/yaml.so
+	cp -f 3rdparty/yaml/yaml.so test/yaml.so
+
+telescope:
+	cp -f 3rdparty/telescope/* test/
 
 clean-all:
 	make -C 3rdparty/luasocket clean
@@ -34,7 +37,7 @@ clean-all:
 
 clean:
 	rm -f test/*.so
-	rm *.so
+	rm -f *.so
 	rm -f $(OBJS)
 
 test:
