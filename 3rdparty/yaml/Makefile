@@ -1,11 +1,12 @@
 # Default installation prefix
+LUAV?=5.2
 PREFIX=/usr
 
 # System's libraries directory (where binary libraries are installed)
-LUA_LIBDIR=$(PREFIX)/lib/lua5.2
+LUA_LIBDIR=$(PREFIX)/lib/lua$(LUAV)
 
 # System's lua directory (where Lua libraries are installed)
-LUA_DIR=$(PREFIX)/share/lua5.2
+LUA_DIR=$(PREFIX)/share/lua$(LUAV)
 
 LUAINC=$(PREFIX)/include
 LUALIB=$(PREFIX)/lib
@@ -15,7 +16,7 @@ CC=gcc
 # uses exceptions internally; can be removed
 CFLAGS=-O2 -Wall $(INC) -shared -fPIC -fexceptions
 LDFLAGS=-shared `pkg-config lua5.2 --libs`
-INC=`pkg-config lua5.2 --cflags`
+INC=`pkg-config lua$(LUAV) --cflags`
 
 OBJS=lyaml.o api.o dumper.o emitter.o loader.o parser.o reader.o scanner.o writer.o b64.o
 

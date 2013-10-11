@@ -21,15 +21,15 @@ PLAT?=linux
 LUAV?=5.2
 
 # MYCFLAGS: to be set by user if needed
-MYCFLAGS=
+MYCFLAGS=`pkg-config lua$(LUAV) --cflags`
 
 # MYLDFLAGS: to be set by user if needed
-MYLDFLAGS=
+MYLDFLAGS=`pkg-config lua$(LUAV) --libs`
 
 # DEBUG: NODEBUG DEBUG
 # debug mode causes luasocket to collect and returns timing information useful
 # for testing and debugging luasocket itself
-DEBUG?=DEBUG
+DEBUG?=NODEBUG
 
 # COMPAT: COMPAT NOCOMPAT
 # when compiling for 5.2, use LUA_COMPAT_MODULE
@@ -165,7 +165,7 @@ DEF_linux=-DLUASOCKET_$(DEBUG) -DLUA_$(COMPAT)_MODULE \
 	-DMIME_API='__attribute__((visibility("default")))'
 CFLAGS_linux= -I$(LUAINC) $(DEF) -pedantic -Wall -Wshadow -Wextra \
 	-Wimplicit -O2 -ggdb3 -fpic -fvisibility=hidden
-LDFLAGS_linux=-O -shared -fpic -o 
+LDFLAGS_linux=-O -shared -fpic -o
 LD_linux=gcc
 SOCKET_linux=usocket.o
 
@@ -181,7 +181,7 @@ DEF_freebsd=-DLUASOCKET_$(DEBUG) -DLUA_$(COMPAT)_MODULE \
 	-DMIME_API='__attribute__((visibility("default")))'
 CFLAGS_freebsd= -I$(LUAINC) $(DEF) -pedantic -Wall -Wshadow -Wextra \
 	-Wimplicit -O2 -ggdb3 -fpic -fvisibility=hidden
-LDFLAGS_freebsd=-O -shared -fpic -o 
+LDFLAGS_freebsd=-O -shared -fpic -o
 LD_freebsd=gcc
 SOCKET_freebsd=usocket.o
 
@@ -196,7 +196,7 @@ DEF_mingw= -DLUASOCKET_INET_PTON -DLUASOCKET_$(DEBUG) -DLUA_$(COMPAT)_MODULE \
 	-DMIME_API='__declspec(dllexport)'
 CFLAGS_mingw= -I$(LUAINC) $(DEF) -pedantic -Wall -O2 -fno-common \
 	-fvisibility=hidden
-LDFLAGS_mingw= $(LUALIB) -shared -Wl,-s -lws2_32 -o 
+LDFLAGS_mingw= $(LUALIB) -shared -Wl,-s -lws2_32 -o
 LD_mingw=gcc
 SOCKET_mingw=wsocket.o
 
@@ -208,10 +208,10 @@ SO_win32=dll
 O_win32=obj
 CC_win32=cl
 DEF_win32= //D "WIN32" //D "NDEBUG" //D "_WINDOWS" //D "_USRDLL" \
-     //D "LUASOCKET_API=__declspec(dllexport)" //D "_CRT_SECURE_NO_WARNINGS" \
-     //D "_WINDLL" //D "LUA_$(COMPAT)_MODULE" \
-	 //D "MIME_API=__declspec(dllexport)" \
-     //D "LUASOCKET_$(DEBUG)" 
+    	//D "LUASOCKET_API=__declspec(dllexport)" //D "_CRT_SECURE_NO_WARNINGS" \
+    	//D "_WINDLL" //D "LUA_$(COMPAT)_MODULE" \
+		//D "MIME_API=__declspec(dllexport)" \
+    	//D "LUASOCKET_$(DEBUG)"
 CFLAGS_win32=//I "$(LUAINC)" $(DEF) //O2 //Ot //MD //W3 //nologo
 LDFLAGS_win32= //nologo //link //NOLOGO //DLL //INCREMENTAL:NO \
     //MANIFEST //MANIFESTFILE:"intermediate.manifest" \
@@ -357,7 +357,7 @@ $(UNIX_SO): $(UNIX_OBJS)
 $(SERIAL_SO): $(SERIAL_OBJS)
 	$(LD) $(SERIAL_OBJS) $(LDFLAGS)$@
 
-install: 
+install:
 	$(INSTALL_DIR) $(INSTALL_TOP_LDIR)
 	$(INSTALL_DATA) $(TO_TOP_LDIR) $(INSTALL_TOP_LDIR)
 	$(INSTALL_DIR) $(INSTALL_SOCKET_LDIR)

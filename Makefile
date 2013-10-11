@@ -1,5 +1,8 @@
-LUA_CFLAGS 	= `pkg-config lua5.2 --cflags`
-LUA_LDFLAGS	= `pkg-config lua5.2 --cflags` -g -shared
+# lua5.2, lua5.1, jit
+LUAV=5.1
+
+LUA_CFLAGS 	= `pkg-config lua$(LUAV) --cflags`
+LUA_LDFLAGS	= `pkg-config lua$(LUAV) --libs` -g -shared
 
 CFLAGS		= -O2 -Wall -shared -fPIC -fexceptions $(LUA_CFLAGS) -I.
 LDFLAGS		= -shared -g $(LUA_LDFLAGS)
@@ -19,12 +22,12 @@ all: $(OBJS)
 libs: yaml luasocket telescope
 
 luasocket:
-	make -C 3rdparty/luasocket all
+	make -C 3rdparty/luasocket all LUAV=$(LUAV)
 	cp -f 3rdparty/luasocket/socket.lua test/socket.lua
 	cp -f 3rdparty/luasocket/socket.so.3.0-rc1 test/socket.so
 
 yaml:
-	make -C 3rdparty/yaml all
+	make -C 3rdparty/yaml all LUAV=$(LUAV)
 	cp -f 3rdparty/yaml/yaml.so test/yaml.so
 
 telescope:
