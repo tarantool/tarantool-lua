@@ -1,5 +1,5 @@
 # lua5.2, lua5.1, jit
-LUAV=5.1
+LUAV=5.2
 
 LUA_CFLAGS 	= `pkg-config lua$(LUAV) --cflags`
 LUA_LDFLAGS	= `pkg-config lua$(LUAV) --libs` -g -shared
