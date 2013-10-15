@@ -114,7 +114,7 @@ int ltnt_requestbuilder_select(struct lua_State *L) {
 		luaL_error(L, "Bad argument #6: (table expected, got %s)",
 				lua_typename(L, lua_type(L, 7)));
 
-	if (tp_select(*iproto, space, index, offset, limit)){
+	if (tp_select(*iproto, space, index, offset, limit) == -1){
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, "tp.h memory error");
 		return 2;

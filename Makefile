@@ -43,7 +43,7 @@ clean:
 	rm -f *.so
 	rm -f $(OBJS)
 
-test:
-	lua test/test.lua
+test: all libs
+	make -C test LUAV=$(LUAV)
 
 .PHONY: luasocket yaml test
