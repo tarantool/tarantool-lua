@@ -168,8 +168,89 @@ context(
             end
         )
    end
-)
 
+)
+context(
+    "ResponseParser",
+    function()
+        before(
+            function()
+                yaml = require("yaml")
+                tnt  = require("tnt" )
+                rp = tnt.response_parser_new() 
+                sr1 = "\x0D\x00\x00\x00\x1C\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x0C\x00\x00\x00\x02\x00\x00\x00\x04\x68\x65\x6C\x31\x06\x77\x6F\x72\x6C\x64\x31"
+                tr1 = yaml.load("\
+---\
+request_id: 1\
+reply_code: 0\
+tuples:\
+- - hel1\
+  - world1\
+operation_code: 13\
+tuple_count: 1\
+...\
+                ")
+                sr2 = "\x11\x00\x00\x00\x58\x00\x00\x00\x06\x00\x00\x00\x00\x00\x00\x00\x04\x00\x00\x00\x0C\x00\x00\x00\x02\x00\x00\x00\x04\x68\x65\x6C\x34\x06\x77\x6F\x72\x6C\x64\x31\x0C\x00\x00\x00\x02\x00\x00\x00\x04\x68\x65\x6C\x33\x06\x77\x6F\x72\x6C\x64\x31\x0C\x00\x00\x00\x02\x00\x00\x00\x04\x68\x65\x6C\x32\x06\x77\x6F\x72\x6C\x64\x31\x0C\x00\x00\x00\x02\x00\x00\x00\x04\x68\x65\x6C\x31\x06\x77\x6F\x72\x6C\x64\x31"
+                tr2 = yaml.load("\
+---\
+request_id: 6\
+reply_code: 0\
+tuples:\
+- - hel4\
+  - world1\
+- - hel3\
+  - world1\
+- - hel2\
+  - world1\
+- - hel1\
+  - world1\
+operation_code: 17\
+tuple_count: 4\
+...\
+                ")
+                sr3 ="\x11\x00\x00\x00\x26\x00\x00\x00\x05\x00\x00\x00\x02\x35\x00\x00\x4E\x6F\x20\x69\x6E\x64\x65\x78\x20\x23\x33\x20\x69\x73\x20\x64\x65\x66\x69\x6E\x65\x64\x20\x69\x6E\x20\x73\x70\x61\x63\x65\x20\x30\x00" 
+                tr3 = yaml.load("\
+---\
+request_id: 5\
+reply_code: 2\
+error:\
+  errstr: \"No index #3 is defined in space 0\"\
+  errcode: 53\
+operation_code: 17\
+tuple_count: 0\
+...\
+                ")
+                table.equal = function(t1, t2)
+                    for k, v in ipairs(t1) do
+                        if type(t1[k]) == 'table' and type(t2[k]) == 'table' then
+                            if table.equal(t1[k], t2[k]) then return false end
+                        elseif t1[k] ~= t2[k] then return false end
+                    end
+                    for k, v in ipairs(t2) do
+                        if type(t1[k]) == 'table' and type(t2[k]) == 'table' then
+                            if table.equal(t1[k], t2[k]) then return false end
+                        elseif t1[k] ~= t2[k] then return false end
+                    end
+                    return true
+                end
+            end
+        )
+        test(
+            "The big one",
+            function()
+                a, b = rp:parse(sr1)
+                assert_true(a)
+                assert_true(table.equal(tr1, b))
+                a, b = rp:parse(sr2)
+                assert_true(a)
+                assert_true(table.equal(tr2, b))
+                a, b = rp:parse(sr3)
+                assert_true(a)
+                assert_true(table.equal(tr3, b))
+            end
+        )
+    end
+)
 --  Debug helper :3
 --                print("\""..HexDump(rb:getvalue()).."\"")
 --                print("\"\"")
