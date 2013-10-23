@@ -1,5 +1,5 @@
-# lua5.2, lua5.1, jit
-LUAV=5.2
+# 5.2, jit
+LUAV?=5.2
 
 LUA_CFLAGS 	= `pkg-config lua$(LUAV) --cflags`
 LUA_LDFLAGS	= `pkg-config lua$(LUAV) --libs` -g -shared
@@ -44,6 +44,6 @@ clean:
 	rm -f $(OBJS)
 
 test: all libs
-	make -C test LUAV=$(LUAV)
+	 LUAV=$(LUAV) make -C test
 
 .PHONY: luasocket yaml test
