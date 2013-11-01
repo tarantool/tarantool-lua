@@ -22,7 +22,7 @@ extern "C" {
 int ltnt_response_bodylen(struct lua_State *L) {
 	size_t resps = 0;
 	char *resp = (char *)ltnt_checkstring(L, 1, &resps);
-	lua_pushnumber(L, (lua_Number )((uint32_t *)resp)[1]);
+	lua_pushnumber(L, tp_reqbuf(resp, 12));
 	return 1;
 }
 

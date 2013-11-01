@@ -1,15 +1,33 @@
+function HexDump(str, spacer)
+    return (
+        string.gsub(str,"(.)",
+            function (c)
+                return string.format("%02X%s",string.byte(c), spacer or "")
+            end
+        )
+    )
+end
+
+
 local tarantool = {
     _VERSION     = "tarantool-lua 0.0.1-dev",
-    _DESCRIPTION = "Lua library for the tarantool k-v storage system"
+    _DESCRIPTION = "Lua library for the tarantool k-v storage system",
 }
 
-local tnt = require("tnt")
+local tnt  = require("tnt")
+local yaml = require("yaml")
 
-local defaults = {
+local default = {
     host    = "127.0.0.1",
     port    = 33013,
     timeout = 15
 }
+
+function tarantool.error(msg, level)
+    error(msg, (level or 1) + 1)
+end
+
+
 
 local function create_connection(host, port, timeout)
     if host == nil then host = defaults.host end
@@ -30,23 +48,22 @@ local function send_message(socket, rb)
     if stat == false then
         tarantool.error("RequestBuilder: "..pack, 4)
     end
-    st, err = sock:send(rb:getvalue())
+    st, err = socket:send(rb:getvalue())
     if st == nil then
         tarantool.error("LuaSocket: "..err, 5)
     end
 end
 
 local function recv_message(socket, rp)
-    a, err = socket:receive('12')
+    local a, err = socket:receive('12')
     if a == nil then
         tarantool.error("LuaSocket: "..err, 5)
-
     end
-    b, err = socket:receive(tostring(tnt.get_body_len(st)))
+    local b, err = socket:receive(tostring(tnt.get_body_len(a)))
     if b == nil then
         tarantool.error("LuaSocket: "..err, 5)
     end
-    stat, pack = rp:parse(a..b)
+    local stat, pack = rp:parse(a..b)
     if stat == false then
         tarantool.error("ResponseParser: "..pack, 4)
     end
@@ -59,18 +76,20 @@ local function recv_message(socket, rp)
             ),
             6
         )
+    end
     if pack.reply_code == 1 then
         return false, string.format(
                         "TarantoolError, retry: %d - %s",
                         pack.error.errcode,
                         pack.errcode.errstring
                     )
-    return true, pack.tuple
+    end
+    return true, yaml.dump(pack.tuples)
 end
 
 local function recv_message_2(socket, rp)
     ans, toread, header = '', 12, true
-    while toread != 0 do
+    while toread ~= 0 do
         st, err = socket:receive(tostring(toread))
         if st == nil then
             tarantool.error("LuaSocket: "..err, 5)
@@ -95,12 +114,14 @@ local function recv_message_2(socket, rp)
             ),
             6
         )
+    end
     if pack.reply_code == 1 then
         return false, string.format(
                         "TarantoolError, retry: %d - %s",
                         pack.error.errcode,
                         pack.errcode.errstring
                     )
+    end
     return true, pack.tuple
 end
 
@@ -111,6 +132,7 @@ local function checkte(var, types, nvar, nfunc)
     for i, j in ipairs(types) do
         if type(var) == j then
             return true
+        end
     end
     tarantool.error(
         string.format("%s type error: %s must be one of {%s}, but not %s",
@@ -130,11 +152,12 @@ local function checkt(var, types)
     for i, j in ipairs(types) do
         if type(var) == j then
             return true
+        end
     end
     return false
 end
 
-function map(func, array)
+local function map(func, array)
   local new_array = {}
   for i,v in ipairs(array) do
     new_array[i] = func(v)
@@ -144,10 +167,9 @@ end
 
 local function tbl_level(element)
     if checkt(element, 'table') then
-        return math.max(unpack(map(level, element))) + 1
-    else
-        return 1
+        return math.max(unpack(map(tbl_level, element))) + 1
     end
+    return 0
 end
 
 ----------------- MTBL ---------------------------------
@@ -200,7 +222,7 @@ function Connection._insert(self, space, flags, ...)
     checkte(flags, 'number', 'flags', 'Connection.insert')
 
     tuple = nil
-    flags = flags + tnt.flags.BOX_RETURN_TUPLE
+    flags = flags + tnt.flags.RETURN_TUPLE
     if varargs.n == 1 and checkt(varargs[1], 'table') then --TODO: convert numbers to binstring
         for pos = 1, select("#", ...) do
             checkte(varargs[1][pos], {'string', 'number'}, 'tuple elements' ,'Connection.delete')
@@ -212,7 +234,17 @@ function Connection._insert(self, space, flags, ...)
         end
         tuple = varargs
     end
-    send_message(self.sock, self.rb:insert(self.reqid, space, flags, tuple))
+    stat, err = self.rb:insert(self.reqid, space, flags, tuple)
+    if not stat then
+        tarantool.error(
+            string.format(
+                "Insert error: %s",
+                err
+            ),
+            4
+        )
+    end
+    send_message(self.sock, self.rb)
     status, ans = recv_message(self.sock, self.rp)
     self.reqid = self.reqid + 1
     self.rb:flush()
@@ -220,15 +252,15 @@ function Connection._insert(self, space, flags, ...)
 end
 
 function Connection.insert(self, space, ...)
-    self:_insert(space, tnt.flags.BOX_ADD, ...)
+    return self:_insert(space, tnt.flags.BOX_ADD, ...)
 end
 
 function Connection.replace(self, space, ...)
-    self:_insert(space, tnt.flags.BOX_REPLACE, ...)
+    return self:_insert(space, tnt.flags.BOX_REPLACE, ...)
 end
 
 function Connection.store(self, space, ...)
-    self:_insert(space, 0x00, ...)
+    return self:_insert(space, 0x00, ...)
 end
 
 function Connection.delete(self, space, ...)
@@ -266,11 +298,24 @@ function Connection.ping(self)
     return status
 end
 
-function Connection.select(self, space, index, keys, offset, limit)
+function Connection.select(self, space, index, keys, offset, limit) --TODO: convert numbers to binstring
     checkte(space, 'number', 'space', 'Connection.select')
     checkte(index, 'number', 'index', 'Connection.select')
     checkte(keys, {'string', 'number', 'table'}, 'KEYS', 'Connection.select')
-    if checkt(keys, 'table') then --TODO: if table.level == 1 then ... (tbl_level(tale))
+    keys_level = tbl_level(keys)
+    if keys_level > 2 then
+        tarantool.error(
+            string.format(
+                "keys must have nesting 2 or less, but not %s",
+                keys_level
+            ),
+            3
+        )
+    end
+    if keys_level ~= 0 then
+        if keys_level == 1 then
+            keys = {keys}
+        end
         for i = 1, #keys do
             checkte(keys[i], {'string', 'number', 'table'}, 'KEYS', 'Connection.select')
             if checkt(keys[i], 'table') then
@@ -278,7 +323,7 @@ function Connection.select(self, space, index, keys, offset, limit)
                     checkte(keys[i][j], {'string', 'number'}, 'KEYS', 'Connection.select')
                 end
             else
-                keys[i] == {keys[i]}
+                keys[i] = {keys[i]}
             end
         end
     else
@@ -288,10 +333,14 @@ function Connection.select(self, space, index, keys, offset, limit)
     if offset == nil then offset = 0 end
     checkte(limit , {'number', 'nil'}, 'limit' , 'Connection.select')
     if limit == nil then limit = 0xFFFFFFFF end
-    send_message(
-        self.sock,
-        self.rb:select(self.reqid, space, index, offset, limit, keys)
-    )
+    stat, err = self.rb:select(self.reqid, space, index, offset, limit, keys) 
+    if not stat then
+        tarantool.error(
+            string.format("Select error: %s", err),
+            4
+        )
+    end
+    send_message(self.sock, self.rb)
     status, ans = recv_message(self.sock, self.rp)
     self.reqid = self.reqid + 1
     self.rb:flush()
@@ -310,12 +359,11 @@ function Connection.call(self, name, args)
 end
 
 ----------------- API ----------------------------------
-function tarantool.error(msg, level)
-    error(msg, (level or 1) + 1)
-end
+a = Connection.connect('127.0.0.1', 33013)
+print (a:store(1, 'hello', '1', '23'))
+print (a:select(1, 0, {'hello'}))
 
 --
 -- [host = 'localhost'[, port = 33013[, timeout=5]]]
 --
-
 
