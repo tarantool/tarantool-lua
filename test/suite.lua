@@ -184,8 +184,7 @@ context(
 request_id: 1\
 reply_code: 0\
 tuples:\
-- - hel1\
-  - world1\
+- [hel1, world1]\
 operation_code: 13\
 tuple_count: 1\
 ...\
@@ -196,14 +195,10 @@ tuple_count: 1\
 request_id: 6\
 reply_code: 0\
 tuples:\
-- - hel4\
-  - world1\
-- - hel3\
-  - world1\
-- - hel2\
-  - world1\
-- - hel1\
-  - world1\
+- [hel4, world1]\
+- [hel3, world1]\
+- [hel2, world1]\
+- [hel1, world1]\
 operation_code: 17\
 tuple_count: 4\
 ...\

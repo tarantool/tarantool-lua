@@ -19,7 +19,7 @@ all: $(OBJS)
 	$(CC) -o $(OUTPUT) $(LDFLAGS) ${OBJS}
 	cp -f tnt.so test/
 
-libs: yaml luasocket telescope
+libs: yaml luasocket telescope pack
 
 luasocket:
 	make -C 3rdparty/luasocket all LUAV=$(LUAV)
@@ -33,9 +33,14 @@ yaml:
 telescope:
 	cp -f 3rdparty/telescope/* test/
 
+pack:
+	make -C 3rdparty/pack all LUAV=$(LUAV)
+	cp -f 3rdparty/pack/pack.so test/pack.so
+
 clean-all:
 	make -C 3rdparty/luasocket clean
 	make -C 3rdparty/yaml clean
+	make -C 3rdparty/pack clean
 	make clean
 
 clean:
@@ -43,7 +48,7 @@ clean:
 	rm -f *.so
 	rm -f $(OBJS)
 
-test: all libs
+test:
 	 LUAV=$(LUAV) make -C test
 
 .PHONY: luasocket yaml test
