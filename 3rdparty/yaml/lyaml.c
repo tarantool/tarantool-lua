@@ -38,7 +38,6 @@
 
 #if !defined(LUA_VERSION_NUM) || LUA_VERSION_NUM == 501
 #	define luaL_newlib(L, num) (lua_newtable((L)),luaL_setfuncs((L), (num), 0))
-
 	void luaL_setfuncs (lua_State *L, const luaL_Reg *l, int nup) {
 		luaL_checkstack(L, nup+1, "too many upvalues");
 		for (; l->name != NULL; l++) {  /* fill the table with given functions */
@@ -51,41 +50,40 @@
 		}
 		lua_pop(L, nup);  /* remove upvalues */
 	}
-lua_Integer lua_tointegerx (lua_State *L, int i, int *isnum) {
-	lua_Integer n = lua_tointeger(L, i);
-	if (isnum != NULL) {
-		*isnum = (n != 0 || lua_isnumber(L, i));
+	lua_Integer lua_tointegerx (lua_State *L, int i, int *isnum) {
+		lua_Integer n = lua_tointeger(L, i);
+		if (isnum != NULL) {
+			*isnum = (n != 0 || lua_isnumber(L, i));
+		}
+		return n;
 	}
-	return n;
-}
 
-void lua_len (lua_State *L, int i) {
-	switch (lua_type(L, i)) {
-	case LUA_TSTRING: /* fall through */
-	case LUA_TTABLE:
-		lua_pushnumber(L, (int)lua_objlen(L, i));
-		break;
-	case LUA_TUSERDATA:
-		if (luaL_callmeta(L, i, "__len"))
+	void lua_len (lua_State *L, int i) {
+		switch (lua_type(L, i)) {
+		case LUA_TSTRING: /* fall through */
+		case LUA_TTABLE:
+			lua_pushnumber(L, (int)lua_objlen(L, i));
 			break;
-		/* maybe fall through */
-	default:
-		luaL_error(L, "attempt to get length of a %s value",
-			   lua_typename(L, lua_type(L, i)));
+		case LUA_TUSERDATA:
+			if (luaL_callmeta(L, i, "__len"))
+				break;
+			/* maybe fall through */
+		default:
+			luaL_error(L, "attempt to get length of a %s value",
+				lua_typename(L, lua_type(L, i)));
+		}
 	}
-}
 
-int luaL_len (lua_State *L, int i) {
-	int res = 0, isnum = 0;
-	luaL_checkstack(L, 1, "not enough stack slots");
-	lua_len(L, i);
-	res = (int)lua_tointegerx(L, -1, &isnum);
-	lua_pop(L, 1);
-	if (!isnum)
-		luaL_error(L, "object length is not a number");
-	return res;
-}
-
+	int luaL_len (lua_State *L, int i) {
+		int res = 0, isnum = 0;
+		luaL_checkstack(L, 1, "not enough stack slots");
+		lua_len(L, i);
+		res = (int)lua_tointegerx(L, -1, &isnum);
+		lua_pop(L, 1);
+		if (!isnum)
+			luaL_error(L, "object length is not a number");
+		return res;
+	}
 #endif /* !defined(LUA_VERSION_NUMBER) || LUA_VERSION_NUMBER == 501 */
 
 /* configurable flags */

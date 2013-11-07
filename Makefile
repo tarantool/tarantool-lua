@@ -20,6 +20,7 @@ all: $(OBJS)
 	cp -f tnt.so test/
 	cp -f src/tarantool.lua test/
 	cp -f src/schema.lua test/
+	cp -f src/tnthelpers.lua test/
 
 libs: yaml luasocket telescope pack
 

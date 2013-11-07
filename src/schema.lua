@@ -2,38 +2,13 @@
 local yaml = require("yaml")
 --------
 local pack = require("pack")
-local tarantool = {}
-
-local function checkt(var, types)
-    if type(types) == 'string' then
-       types = {types}
-    end
-    for i, j in pairs(types) do
-        if type(var) == j then
-            return true
-        end
-    end
-    return false
-end
-
-local function checkte(var, types, nvar, nfunc)
-    if type(types) == 'string' then
-       types = {types}
-    end
-    for i, j in pairs(types) do
-        if type(var) == j then
-            return true
-        end
-    end
-    error(
-        string.format("%s type error: %s must be one of {%s}, but not %s",
-            nfunc, nvar, table.concat(types, ", "), type(var)), 3)
-end
+local h    = require("tnthelpers")
+local checkt  = h.checkt
+local checkte = h.checkte
 
 --------
 --  possible values: 'string', 'number32', 'number64'
 --  {
---      default = 'string',
 --      spaces = {
 --          [0] = {
 --              fields  = {'string', 'number32'},
@@ -49,16 +24,7 @@ end
 --              to = {'string', 'number',...},
 --      }
 --  }
---
---  Schema.new          (schema)
---  Schema.set          (schema)
---  Schema._check       (schema)
---  Schema.pack_space   (space, args)
---  Schema.unpack_space (space, args)
---  Schema.pack_func    (func,  args)
---  Schema.unpack_func  (func,  args)
---  Schema.pack_key     (space, num, key)
---------
+-------
 local Schema = {
     pack_int32 = pack.pack_L,
     pack_int64 = pack.pack_Q,
@@ -110,7 +76,7 @@ local Schema = {
             elseif type(tuple[i]) == 'string' then
                 val = tuple[i]
             else
-                self.error('error 2') --TODO: name error
+                self.error(string.format('Schema error: can\'t send value of type %s to tarantool', type(tuple[i])))
             end
             table.insert(new_tuple, val)
         end
@@ -127,11 +93,11 @@ local Schema = {
                 if schema[i] == 'number32' and #tuple[i] == 4 then
                     val = self.unpack_int32(tuple[i])
                 elseif schema[i] == 'number64' and #tuple[i] == 8 then
-                    val = self.unpack_int32(tuple[i])
+                    val = self.unpack_int64(tuple[i])
                 elseif schema[i] == 'string' then
                     val = tuple[i]
                 else
-                    self.error('error') --TODO: name error
+                    self.error(string.format('Schema error: can\'t unpack value with length %s to type %s', #tuple[i], schema[i]))
                 end
                 table.insert(new_tuple, val)
             end
@@ -150,16 +116,20 @@ local Schema = {
         end
         return new_tuple
     end,
-
+    pack_field = function (self, space, pos, arg)
+        local schema = nil
+        if self._schema.spaces[space] ~= nil then
+            schema = table.unpack(self._schema.spaces[space], pos, pos)
+        end
+        return self:pack(schema, {arg})[1]
+    end,
     pack_space = function (self, space, args)
         local space_schema = self._schema.spaces[space]
         if space_schema ~= nil then space_schema = space_schema.fields end
         return self:pack(space_schema, args)
     end,
     pack_space_closure = function(self, space)
-        return function(key)
-            return self:pack_space(space, key)
-        end
+        return function(key) return self:pack_space(space, key) end
     end,
     unpack_space = function (self, space, args)
         local space_schema = self._schema.spaces[space]
@@ -167,9 +137,7 @@ local Schema = {
         return self:unpack(space_schema, args)
     end,
     unpack_space_closure = function(self, space)
-        return function(key)
-            return self:unpack_space(space, key)
-        end
+        return function(key) return self:unpack_space(space, key) end
     end,
     pack_func = function (self, func, args)
         local space_schema = self._schema.funcs[func]
@@ -182,9 +150,7 @@ local Schema = {
         return self:unpack(space_schema, args)
     end,
     unpack_func_closure = function(self, func)
-        return function(args)
-            return self:unpack_func(func, args)
-        end
+        return function(args) return self:unpack_func(func, args) end
     end,
     pack_key = function (self, space, index, key)
         local space_schema = self._schema.spaces[space]
@@ -192,9 +158,7 @@ local Schema = {
         return self:pack(space_schema, key)
     end,
     pack_key_closure = function (self, space, index)
-        return function(key)
-            return self:pack_key(space, index, key)
-        end
+        return function(key) return self:pack_key(space, index, key) end
     end,
 
     set = function(self, schema) -- TODO: refactor, maybe
@@ -209,13 +173,13 @@ local Schema = {
             checkte(v.indexes, 'table', 'item of schema.spaces.indexes', 'Schema.set')
             for _, v1 in pairs(v.fields) do
                 if v1 ~= 'string' and v1 ~= 'number32' and v1 ~= 'number64' then
-                    self.error('error') --TODO: name error
+                    self.error(string.format('Schema error: wrong type of field - %s', v1))
                 end
             end
             for k1, v1 in pairs(v.indexes) do
                 for k2, v2 in pairs(v1) do
                     if v.fields[v2 + 1] == nil then
-                        self.error('error') --TODO: name error
+                        self.error(string.format('Schema error: link to nil field in key %d on place %d', k1, k2 - 1))
                     else
                         v1[k2] = v.fields[v2 + 1]
                     end
@@ -231,7 +195,7 @@ local Schema = {
                 checkte(v[v1], 'table', v1..' of schema.funcs', 'Schema.set')
                 for _, v2 in pairs(v[v1]) do
                     if v2 ~= 'string' and v2 ~= 'number32' and v2 ~= 'number64' then
-                        self.error('error') --TODO: name error
+                        self.error(string.format('Schema error: wrong type of args - %s', v2))
                     end
                 end
             end 
