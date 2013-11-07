@@ -18,6 +18,8 @@ OBJS = src/tnt.o \
 all: $(OBJS)
 	$(CC) -o $(OUTPUT) $(LDFLAGS) ${OBJS}
 	cp -f tnt.so test/
+	cp -f src/tarantool.lua test/
+	cp -f src/schema.lua test/
 
 libs: yaml luasocket telescope pack
 
@@ -49,6 +51,8 @@ clean:
 	rm -f $(OBJS)
 
 test:
-	 LUAV=$(LUAV) make -C test
+	 LUAV=$(LUAV) make -C test test
 
+test_new:
+	 LUAV=$(LUAV) make -C test test_new
 .PHONY: luasocket yaml test

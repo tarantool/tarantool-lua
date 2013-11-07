@@ -1,33 +1,33 @@
+-- DEBUG
+local yaml = require("yaml")
+--------
 local pack = require("pack")
 local tarantool = {}
-function tarantool.error(msg, level)
-    error(msg, (level or 1) + 1)
+
+local function checkt(var, types)
+    if type(types) == 'string' then
+       types = {types}
+    end
+    for i, j in pairs(types) do
+        if type(var) == j then
+            return true
+        end
+    end
+    return false
 end
 
 local function checkte(var, types, nvar, nfunc)
     if type(types) == 'string' then
        types = {types}
     end
-    for i, j in ipairs(types) do
+    for i, j in pairs(types) do
         if type(var) == j then
             return true
         end
     end
-    tarantool.error(
+    error(
         string.format("%s type error: %s must be one of {%s}, but not %s",
             nfunc, nvar, table.concat(types, ", "), type(var)), 3)
-end
-
-local function checkt(var, types)
-    if type(types) == 'string' then
-       types = {types}
-    end
-    for i, j in ipairs(types) do
-        if type(var) == j then
-            return true
-        end
-    end
-    return false
 end
 
 --------
@@ -66,6 +66,10 @@ local Schema = {
     unpack_int32 = pack.unpack_L,
     unpack_int64 = pack.unpack_Q,
 
+    error = function(msg, level)
+        error(msg, (level or 1) + 1)
+    end,
+
     pack = function (self, schema, tuple)
         local new_tuple = {}
         local first = 1
@@ -73,16 +77,30 @@ local Schema = {
             first = math.min(#schema, #tuple)
             local val = nil
             for i = 1, first do
-                if schema[i] == 'number32' and checkt(tuple[i], 'number') then
-                    val = self.pack_int32(tuple[i])
-                elseif schema[i] == 'number64' and checkt(tuple[i], 'number') then
-                    val = self.pack_int64(tuple[i])
-                elseif schema[i] == 'string' and checkt(tuple[i], 'string') then
-                    val = tuple[i]
-                else
-                    tarantool.error() --TODO: name error
+                if schema[i] == 'number32' then
+                    if checkt(tuple[i], 'number') then
+                        val = self.pack_int32(tuple[i])
+                    elseif tonumber(tuple[i]) ~= nil then
+                        val = self.pack_int32(tonumber(tuple[i]))
+                    else
+                        self.error(string.format('Schema error: type in schema is number32, but real is %s', type(tuple[i])))
+                    end
+                elseif schema[i] == 'number64' then
+                    if checkt(tuple[i], 'number') then
+                        val = self.pack_int64(tuple[i])
+                    elseif tonumber(tuple[i]) ~= nil then
+                        val = self.pack_int64(tonumber(tuple[i]))
+                    else
+                        self.error(string.format('Schema error: type in schema is number64, but real is %s', type(tuple[i])))
+                    end
+                elseif schema[i] == 'string' then
+                    if checkt(tuple[i], 'string') then
+                        val = tuple[i]
+                    else
+                        self.error(string.format('Schema error: type in schema is string, but real is %s', type(tuple[i])))
+                    end
                 end
-                new_tuple:append(val)
+                table.insert(new_tuple, val)
             end
             first = first + 1
         end
@@ -92,9 +110,9 @@ local Schema = {
             elseif type(tuple[i]) == 'string' then
                 val = tuple[i]
             else
-                tarantool.error() --TODO: name error
+                self.error('error 2') --TODO: name error
             end
-            new_tuple:append(val)
+            table.insert(new_tuple, val)
         end
         return new_tuple
     end,
@@ -103,7 +121,7 @@ local Schema = {
         local new_tuple = {}
         local first = 1
         if schema ~= nil then
-            local first = math.min(#schema, #tuple)
+            first = math.min(#schema, #tuple)
             local val = nil
             for i = 1, first do
                 if schema[i] == 'number32' and #tuple[i] == 4 then
@@ -113,9 +131,9 @@ local Schema = {
                 elseif schema[i] == 'string' then
                     val = tuple[i]
                 else
-                    tarantool.error() --TODO: name error
+                    self.error('error') --TODO: name error
                 end
-                new_tuple:append(tuple[i])
+                table.insert(new_tuple, val)
             end
             first = first + 1
         end
@@ -128,7 +146,7 @@ local Schema = {
             else
                 val = tuple[i]
             end
-            new_tuple:append(val)
+            table.insert(new_tuple, val)
         end
         return new_tuple
     end,
@@ -138,9 +156,9 @@ local Schema = {
         if space_schema ~= nil then space_schema = space_schema.fields end
         return self:pack(space_schema, args)
     end,
-    pack_space_closure = function(space)
+    pack_space_closure = function(self, space)
         return function(key)
-            self:pack_space(space, key)
+            return self:pack_space(space, key)
         end
     end,
     unpack_space = function (self, space, args)
@@ -148,9 +166,9 @@ local Schema = {
         if space_schema ~= nil then space_schema = space_schema.fields end
         return self:unpack(space_schema, args)
     end,
-    unpack_space_closure = function(space)
+    unpack_space_closure = function(self, space)
         return function(key)
-            self:unpack_space(space, key)
+            return self:unpack_space(space, key)
         end
     end,
     pack_func = function (self, func, args)
@@ -163,77 +181,70 @@ local Schema = {
         if space_schema ~= nil then space_schema = space_schema['out'] end
         return self:unpack(space_schema, args)
     end,
-    unpack_func_closure = function(func)
+    unpack_func_closure = function(self, func)
         return function(args)
-            self:unpack_func(func, args)
+            return self:unpack_func(func, args)
         end
     end,
     pack_key = function (self, space, index, key)
         local space_schema = self._schema.spaces[space]
         if space_schema ~= nil then space_schema = space_schema.indexes[index] end
-        return self:pack(space_schema, args)
+        return self:pack(space_schema, key)
     end,
     pack_key_closure = function (self, space, index)
         return function(key)
-            self:pack_key(space, index, key)
+            return self:pack_key(space, index, key)
         end
     end,
 
     set = function(self, schema) -- TODO: refactor, maybe
-        if checkte(schema, 'table', 'schema', 'Schema.set') then
-            if schema.spaces == nil then
-                schema.spaces = {}
-            end
-            if checkte(schema.spaces, 'table', 'schema.spaces', 'Schema.set') then
-                for _, v in ipairs(schema.spaces) do
-                    if checkte(v, 'table', 'item of schema.spaces', 'Schema.set') then
-                        if checkt(v.fields, 'nil') then v.fields = {} end
-                        checkte(v.fields, 'table', 'item of schema.spaces.fields', 'Schema.set')
-                        for _, v1 in ipairs(v.fields) do
-                            if v1 ~= 'string' and v1 ~= 'number32' and v1 ~= 'number64' then
-                                tarantool.error('') --TODO: name error
-                            end
-                        end
-                        if checkt(v.indexes, 'nil') then v.indexes = {} end
-                        checkte(v.indexes, 'table', 'item of schema.spaces.indexes', 'Schema.set')
-                        for _, v1 in ipairs(v.indexes) do
-                            for k2, v2 in ipairs(v1) do
-                                if v.fields[v2] == nil then
-                                    tarantool.error('') --TODO: name error
-                                else
-                                    v1[k2] = v.fields[v2]
-                                end
-                            end
-                        end
-                    end
+        checkte(schema, 'table', 'schema', 'Schema.set')
+        if schema.spaces == nil then schema.spaces = {} end
+        checkte(schema.spaces, 'table', 'schema.spaces', 'Schema.set')
+        for _, v in pairs(schema.spaces) do
+            checkte(v, 'table', 'item of schema.spaces', 'Schema.set')
+            if checkt(v.fields, 'nil') then v.fields = {} end
+            if checkt(v.indexes, 'nil') then v.indexes = {} end
+            checkte(v.fields, 'table', 'item of schema.spaces.fields', 'Schema.set')
+            checkte(v.indexes, 'table', 'item of schema.spaces.indexes', 'Schema.set')
+            for _, v1 in pairs(v.fields) do
+                if v1 ~= 'string' and v1 ~= 'number32' and v1 ~= 'number64' then
+                    self.error('error') --TODO: name error
                 end
             end
-            if schema.funcs == nil then schema.funcs = {} end
-            if checkte(schema.funcs, 'table', 'schema.funcs', 'Schema.set') then
-                for _, v in ipairs(schema.funcs) do
-                    if checkte(v, 'table', 'item of schema.funcs', 'Schema.set') then
-                        for _, v1 in ipairs({'in', 'out'}) do
-                            if v[v1] == nil then v[v1] = {} end
-                            checkte(v[v1], 'table', v1..' of schema.funcs', 'Schema.set')
-                            for _, v2 in ipairs(v[v1]) do
-                                if v2 ~= 'string' and v2 ~= 'number32' and v2 ~= 'number64' then
-                                    tarantool.error('') --TODO: name error
-                                end
-                            end
-                        end
+            for k1, v1 in pairs(v.indexes) do
+                for k2, v2 in pairs(v1) do
+                    if v.fields[v2 + 1] == nil then
+                        self.error('error') --TODO: name error
+                    else
+                        v1[k2] = v.fields[v2 + 1]
                     end
                 end
             end
         end
+        if schema.funcs == nil then schema.funcs = {} end
+        checkte(schema.funcs, 'table', 'schema.funcs', 'Schema.set')
+        for _, v in pairs(schema.funcs) do
+            checkte(v, 'table', 'item of schema.funcs', 'Schema.set')
+            for _, v1 in pairs({'in', 'out'}) do
+                if v[v1] == nil then v[v1] = {} end
+                checkte(v[v1], 'table', v1..' of schema.funcs', 'Schema.set')
+                for _, v2 in pairs(v[v1]) do
+                    if v2 ~= 'string' and v2 ~= 'number32' and v2 ~= 'number64' then
+                        self.error('error') --TODO: name error
+                    end
+                end
+            end 
+        end
         self._schema = schema
-    end,
+    end
 }
 
 Schema.__index = Schema
 Schema.new = function (schema)
     local self = {}
     setmetatable(self, Schema)
-    self.set(schema)
+    self:set(schema)
     return self
 end
 
@@ -242,6 +253,5 @@ setmetatable(Schema, {
         return cls.new(...)
     end,
 })
-
 
 return Schema

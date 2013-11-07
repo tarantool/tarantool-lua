@@ -41,7 +41,7 @@ local function checkte(var, types, nvar, nfunc)
     if type(types) == 'string' then
        types = {types}
     end
-    for i, j in ipairs(types) do
+    for i, j in pairs(types) do
         if type(var) == j then
             return true
         end
@@ -55,7 +55,7 @@ local function checkt(var, types)
     if type(types) == 'string' then
        types = {types}
     end
-    for i, j in ipairs(types) do
+    for i, j in pairs(types) do
         if type(var) == j then
             return true
         end
@@ -64,14 +64,14 @@ local function checkt(var, types)
 end
 
 local function apply(func, array)
-    for _, v in ipairs(array) do
+    for _, v in pairs(array) do
         func(v)
     end
 end
 
 local function map(func, array)
     local new_array = {}
-    for k, v in ipairs(array) do
+    for k, v in pairs(array) do
         new_array[k] = func(v)
     end
     return new_array
@@ -94,7 +94,7 @@ end
 
 local function repack_tuple(varargs)
     if varargs.n == 1 and checkt(varargs[1], 'table') then
-        varargs = vararags[1]
+        varargs = varargs[1]
         varargs.n = #varargs
     end
     for pos = 1, varargs.n do
@@ -169,7 +169,7 @@ local Connection = {
                 string.format(
                     "TarantoolError: %d - %s",
                     package.error.errcode,
-                    package.errcode.errstring
+                    package.error.errstr
                 ),
                 6
             )
@@ -178,7 +178,7 @@ local Connection = {
             return false, string.format(
                             "TarantoolError, retry: %d - %s",
                             package.error.errcode,
-                            package.errcode.errstring
+                            package.error.errstr
                         )
         end
         return true, package.tuples
@@ -190,11 +190,13 @@ local Connection = {
         flags = flags + tnt.flags.RETURN_TUPLE
 
         local tuple = self._schema:pack_space(space, repack_tuple(table.pack(...)))
+        print (yaml.dump(tuple))
         local stat, err = self._rb:insert(self:_reqid(), space, flags, tuple)
         if not stat then tarantool.error(string.format("Insert error: %s", err), 4) end
 
         stat, pack = self:_send_recv()
-        if stat then pack = map(self._shema:unpack_space_closure(arg), pack) end
+        if stat then pack = map(self._schema:unpack_space_closure(space), pack) end
+        print (stat, yaml.dump(pack))
         return stat, pack
     end,
 
@@ -219,7 +221,7 @@ local Connection = {
         if not stat then tarantool.error(string.format("Delete error: %s", err), 4) end
 
         stat, pack = self:_send_recv()
-        if stat then pack = map(self._shema:unpack_space_closure(space), pack) end
+        if stat then pack = map(self._schema:unpack_space_closure(space), pack) end
         return stat, pack
     end,
 
@@ -289,7 +291,7 @@ local Connection = {
         end()
         
         stat, pack = self:_send_recv()
-        if stat then pack = map(self._shema:unpack_space_closure(space), pack) end
+        if stat then pack = map(self._schema:unpack_space_closure(space), pack) end
         return stat, pack
     end,
 --]]--
@@ -331,8 +333,8 @@ local Connection = {
                                           offset, limit, keys)
         if not stat then tarantool.error(string.format("Select error: %s", err), 4) end
 
-        local stat, pack = self:send_recv()
-        if stat then pack = map(self._shema:unpack_space_closure(space), pack) end
+        local stat, pack = self:_send_recv()
+        if stat then pack = map(self._schema:unpack_space_closure(space), pack) end
         return stat, pack
     end,
 
@@ -344,15 +346,14 @@ local Connection = {
         local stat, err = self._rb:call(self:_reqid(), name, args)
         if not stat then tarantool.error(string.format("Call error: %s", err), 4) end
 
-        local stat, pack = self:send_recv()
-        if stat then pack = map(self._shema:unpack_func_closure(name), pack) end
+        local stat, pack = self:_send_recv()
+        if stat then pack = map(self._schema:unpack_func_closure(name), pack) end
         return stat, pack
     end,
 }
 
 Connection.__index = Connection
 Connection.connect = function (t)
-    print (t)
     setmetatable(t, {__index = default})
     local self = {}
     setmetatable(self, Connection)
@@ -393,11 +394,15 @@ ans = {conn:store(0, {'2', 2, '3'})}
 print(yaml.dump(ans))
 ans = {conn:store(0, {'3', 1, '3'})}
 print(yaml.dump(ans))
+print(1)
 ans = {conn:select(0, 1, {2})}
 print(yaml.dump(ans))
-conn = Connection('127.0.0.1')
+print(1)
+conn = Connection{host='127.0.0.1'}
 ans = {conn:select(0, 0, {'2'})}
 print(yaml.dump(ans))
-conn = Connection()
+print(1)
+conn = Connection{}
 ans = {conn:select(0, 0, {'2'})}
 print(yaml.dump(ans))
+print(1)
