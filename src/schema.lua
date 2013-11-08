@@ -1,14 +1,7 @@
--- DEBUG
-local yaml = require("yaml")
---------
-local pack = require("pack")
-local h    = require("tnthelpers")
-local checkt  = h.checkt
-local checkte = h.checkte
-
---------
---  possible values: 'string', 'number32', 'number64'
---  {
+-----------------------------------
+-- Schema for tarantool-lua-connector
+-- Typical schema looks like:
+--  SCHEMA = {
 --      spaces = {
 --          [0] = {
 --              fields  = {'string', 'number32'},
@@ -16,14 +9,38 @@ local checkte = h.checkte
 --                  [0] = {0},
 --                  [1] = {1, 2},
 --              }
---          [1] = {'string', 'string', 'string'}
+--          ...
 --      },
 --      funcs = {
 --          'queue.put' = {
---              from = {...},
---              to = {'string', 'number',...},
+--              [from] = {...},
+--              [to]   = {'string', 'number64',...},
+--          },
+--          ...
 --      }
 --  }
+-- In "spaces" field must be table of "space number" : "space specification"
+-- Space specification includes fields(table of types) and indexes
+-- (table of "index number" : "index fields"). Index fields is table
+-- of fields number for current index.
+--
+-- In "funcs" fields must be table of "function name" : "table of input
+-- arguments and table of return values". Both of them are table with types.
+--
+-- Types may be: 'string', 'number32', 'number64'.
+--
+-- This module is not intended to use by user,
+-- but format of package is described here.
+
+-- module: schema
+
+local pack = require("pack")
+local h    = require("tnthelpers")
+local checkt  = h.checkt
+local checkte = h.checkte
+
+--------
+--  possible values: 'string', 'number32', 'number64'
 -------
 local Schema = {
     pack_int32 = pack.pack_L,
@@ -49,7 +66,9 @@ local Schema = {
                     elseif tonumber(tuple[i]) ~= nil then
                         val = self.pack_int32(tonumber(tuple[i]))
                     else
-                        self.error(string.format('Schema error: type in schema is number32, but real is %s', type(tuple[i])))
+                        self.error(string.format('Schema error: type in schema'..
+                                                 ' is number32, but real is %s',
+                                                 type(tuple[i])))
                     end
                 elseif schema[i] == 'number64' then
                     if checkt(tuple[i], 'number') then
@@ -57,13 +76,17 @@ local Schema = {
                     elseif tonumber(tuple[i]) ~= nil then
                         val = self.pack_int64(tonumber(tuple[i]))
                     else
-                        self.error(string.format('Schema error: type in schema is number64, but real is %s', type(tuple[i])))
+                        self.error(string.format('Schema error: type in schema'..
+                                                 ' is number64, but real is %s',
+                                                 type(tuple[i])))
                     end
                 elseif schema[i] == 'string' then
                     if checkt(tuple[i], 'string') then
                         val = tuple[i]
                     else
-                        self.error(string.format('Schema error: type in schema is string, but real is %s', type(tuple[i])))
+                        self.error(string.format('Schema error: type in schema'..
+                                                 ' is string, but real is %s',
+                                                 type(tuple[i])))
                     end
                 end
                 table.insert(new_tuple, val)
@@ -76,7 +99,9 @@ local Schema = {
             elseif type(tuple[i]) == 'string' then
                 val = tuple[i]
             else
-                self.error(string.format('Schema error: can\'t send value of type %s to tarantool', type(tuple[i])))
+                self.error(string.format('Schema error: can\'t send value'..
+                                         ' of type %s to tarantool',
+                                         type(tuple[i])))
             end
             table.insert(new_tuple, val)
         end
@@ -198,7 +223,7 @@ local Schema = {
                         self.error(string.format('Schema error: wrong type of args - %s', v2))
                     end
                 end
-            end 
+            end
         end
         self._schema = schema
     end

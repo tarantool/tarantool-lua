@@ -1,3 +1,6 @@
+--------------------------------
+-- Tarantool-Connector for LUA
+
 local tarantool = {
     _VERSION     = "tarantool-lua 0.0.1-dev",
     _DESCRIPTION = "Lua library for the tarantool k-v storage system",
@@ -22,21 +25,32 @@ local tbl_of_strnum_keys = h.tbl_of_strnum_keys
 function table.pack(...)
     return { n = select("#", ...), ... }
 end
-
-
 ----------------- MTBL ---------------------------------
 
 local Connection = {
+    --- Function for counter ID.
+    -- Increments and returns value.
+    -- Uses self._req_id. 0 in the beggining
+    -- @function _reqid
+    -- @treturn number
+    -- @return number of request id
     _reqid = function(self)
         self._req_id = self._req_id + 1
         return self._req_id
     end,
+    --- Function for throwing tarantool error.
+    -- @function error
+    -- @param  msg   error message
+    -- @param  level error level
     error = function(msg, level)
         error(msg, (level or 1) + 1)
     end,
+    --- Close connection function
+    -- @function close
     close = function(self)
         self._socket:close()
     end,
+    ---
     _body_len = tnt.get_body_len,
 
     update_ops = {
@@ -126,18 +140,66 @@ local Connection = {
         return stat, pack
     end,
 
+    --- Insert function.
+    -- If there's a tuple in the tarantool with same key - error'll be thrown.
+    --
+    -- @function insert
+    -- @tparam space  number (integer)
+    -- @param  space  space to insert tuple into
+    -- @param  tuple  may be a table of fields or fields in vararg.
+    --
+    -- @return[1] true
+    -- @return[1] table of tables of strings/numbers) tuple
+    -- @return[2] false
+    -- @return[2] error message
     insert = function (self, space, ...)
         return self:_insert(space, tnt.flags.BOX_ADD, ...)
     end,
 
+    --- Replace function.
+    -- If there's no tuple in the tarantool with same key - error'll be thrown.
+    --
+    -- @function replace
+    -- @tparam space  number (integer)
+    -- @param  space  space to insert tuple into
+    -- @param  tuple  may be a table of fields or fields in vararg.
+    --
+    -- @return[1] true
+    -- @return[1] table of tables of strings/numbers) tuple
+    -- @return[2] false
+    -- @return[2] error message
     replace = function (self, space, ...)
         return self:_insert(space, tnt.flags.BOX_REPLACE, ...)
     end,
 
+    --- Insert function.
+    -- It'll insert tuple with no matter - there's a key or not.
+    --
+    -- @function store
+    -- @tparam space  number (integer)
+    -- @param  space  space to insert tuple into
+    -- @param  tuple  may be a table of fields or fields in vararg.
+    --
+    -- @return[1] true
+    -- @return[1] table of tables of strings/numbers) tuple
+    -- @return[2] false
+    -- @return[2] error message
     store = function (self, space, ...)
         return self:_insert(space, 0x00, ...)
     end,
 
+    --- Delete function.
+    -- Delete tuple in tarantool with this primary key
+    --
+    -- @function delete
+    -- @tparam  space number (integer)
+    -- @param   space space to insert tuple into
+    -- @param   key   may be a table of fields for key, or fields in vararg
+    --
+    -- @return[1] true
+    -- @return[1] table of tables of strings/numbers) tuple
+    -- @return[2] false
+    -- @return[2] error message
     delete = function (self, space, ...)
         checkte(space, 'number', 'space', 'Connection.delete')
         local flags = tnt.flags.RETURN_TUPLE
@@ -151,6 +213,31 @@ local Connection = {
         return stat, pack
     end,
 
+    --- Update function.
+    -- Update a tuple identified by a primary key. If a key is multipart,
+    -- it is passed in as a Lua table.
+    -- Operation's can be:
+    -- {'set'   , position, value}  - set value in positition `position` to `value`
+    -- {'add'   , position, number} - add `value` to field in position `position`
+    -- {'and'   , position, number} - binary and `value` to field in position `position`
+    -- {'xor'   , position, number} - binary xor `value` to field in position `position`
+    -- {'or'    , position, number} - binary or `value` to field in position `position`
+    -- {'splice', position, from, to, insert} - cut value on position `position` from `from` and up to `to`, then insert `insert` in the middle.
+    -- {'delete', position} - delete value in the position `position`.
+    -- {'insert', position, value} - insert `value` before the `position`
+    --
+    -- @function update
+    -- @tparam space number (integer)
+    -- @tparam key   field or tabe of fields
+    -- @tparam ops   table of table of ops
+    -- @oaram  space space number
+    -- @param  key   primary key to modify tuples with.
+    -- @param  ops   table of operations - it's table with 1, 3 or 5 fields.
+    --
+    -- @return[1] true
+    -- @return[1] table of tables of strings/numbers) tuple
+    -- @return[2] false
+    -- @return[2] error message
     update = function (self, space, key, ops)
         checkte(space, 'number', 'space', 'Connection.update')
         if tbl_level(key) == 0 then key = {key} end
@@ -188,6 +275,15 @@ local Connection = {
         return stat, pack
     end,
 
+    --- Ping funnction.
+    -- Ping Tarantool server
+    --
+    -- @function ping
+    --
+    -- @return[1] true
+    -- @return[1] time in number for pinging.
+    -- @return[2] false
+    -- @return[2] error message
     ping = function (self)
         local stat, err = self._rb:ping(self:_reqid())
         if not stat then self.error(string.format("Ping error: %s", err), 4) end
@@ -197,6 +293,23 @@ local Connection = {
         return stat, socket.gettime() - time
     end,
 
+    --- Select function.
+    -- Search for a tuple or tuples in the given space.
+    --
+    -- @function select
+    -- @tparam                  space   number
+    -- @param                   space   space number to select from
+    -- @tparam                  index   number
+    -- @param                   index   index number to search key in
+    -- @tparam                  keys    string, number or table of strings/numbers or table of tables of strings/numbers
+    -- @param                   keys    keys to select to
+    -- @number[opt=0]           offset  optional offset of query.
+    -- @number[opt=0xFFFFFFFF]  limit   optional limit for response
+    --
+    -- @return[1] true
+    -- @return[1] table of tables of strings/numbers) tuple
+    -- @return[2] false
+    -- @return[2] error message
     select = function (self, space, index, keys, offset, limit)
         checkte(space, 'number', 'space', 'Connection.select')
         checkte(index, 'number', 'index', 'Connection.select')
@@ -229,9 +342,21 @@ local Connection = {
         return stat, pack
     end,
 
+    --- Call function
+    -- Call stored procedure
+    --
+    -- @function    call
+    -- @tparam      name    string
+    -- @tparam      args    table of strings/numbers or nil or unpacked values
+    -- @param       name    name of stored procedure
+    -- @param       args    arguments for calling stored procedure
+    --
+    -- @return[1]   true
+    -- @return[1]   time in number for pinging.
+    -- @return[2]   false
+    -- @return[2]   error message
     call = function (self, name, ...)
         checkte(name, 'string', 'name', 'Connection.call')
-        checkte(name, {'table', 'nil'}, 'args', 'Connection.call')
 
         local args = self._schema:pack_func(name, repack_tuple(table.pack(...)))
         local stat, err = self._rb:call(self:_reqid(), name, args)
@@ -247,7 +372,18 @@ Connection.__index = Connection
 
 Connection.__gc    = Connection.close
 
-Connection.connect = function (t)
+--- Connect function
+-- Connect to tarantool instance and create connection object.
+-- @tparam  host    string
+-- @param   host    string with tarantool address
+-- @tparam  port    number
+-- @param   port    tarantool primary port (or secondary)
+-- @tparam  timeout number
+-- @param   timeout connection timeout (in seconds)
+-- @tparam  schema  table
+-- @param   schema  schema for tarantool connection
+-- @return  Connection object of tarantool
+function Connection.connect(t)
     local function create_connection(host, port, timeout)
         local socket = require("socket").tcp()
         socket:settimeout(timeout)
