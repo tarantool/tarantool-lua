@@ -1,0 +1,435 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>API and Schema &mdash; tarantool-lua 0.0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="tarantool-lua 0.0.1 documentation" href="index.html" />
+    <link rel="prev" title="Welcome to tarantool-lua’s documentation!" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to tarantool-lua’s documentation!"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">tarantool-lua 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="api-and-schema">
+<h1>API and Schema<a class="headerlink" href="#api-and-schema" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="api">
+<h2>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="Connection">
+<em class="property">class </em><tt class="descname">Connection</tt><a class="headerlink" href="#Connection" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt>
+<tt class="descname">connect{host='127.0.0.1', port=33015, timeout=15, schema={}}</tt></dt>
+<dd><p>Connect to tarantool instance and create connection object.
+You may use it like:</p>
+<div class="highlight-lua"><div class="highlight"><pre><span class="n">Connection</span><span class="p">.</span><span class="n">connect</span><span class="p">{</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;</span><span class="s">preffered.host&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">1337</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">MYSCHEMA</span><span class="p">}</span>
+<span class="c1">-- OR</span>
+<span class="n">Connection</span><span class="p">{</span><span class="n">host</span><span class="o">=</span><span class="s1">&#39;</span><span class="s">preffered.host&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">1337</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="n">MYSCHEMA</span><span class="p">}</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>host</strong> (<em>string</em>) &#8211; string with tarantool address</li>
+<li><strong>port</strong> (<em>number</em>) &#8211; tarantool primary port (or secondary)</li>
+<li><strong>timeout</strong> (<em>number</em>) &#8211; connection timeout (in seconds)</li>
+<li><strong>schema</strong> (<em>table</em>) &#8211; schema for tarantool connection</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">Connection object of Tarantool</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.close">
+<tt class="descname">close</tt><big>(</big><big>)</big><a class="headerlink" href="#Connection.close" title="Permalink to this definition">¶</a></dt>
+<dd><p>Close connection to Tarantool.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.error">
+<tt class="descname">error</tt><big>(</big><em>string = nil</em>, <em>level = 1</em><big>)</big><a class="headerlink" href="#Connection.error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for throwing Tarantool error.</p>
+<p>If error is nil, then program exits without message of error.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>string</strong> (<em>string</em>) &#8211; error string</li>
+<li><strong>level</strong> (<em>number</em>) &#8211; level number</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">throws error</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.insert">
+<tt class="descname">insert</tt><big>(</big><em>space_no</em>, <em>...</em><big>)</big><a class="headerlink" href="#Connection.insert" title="Permalink to this definition">¶</a></dt>
+<dt id="Connection.store">
+<tt class="descname">store</tt><big>(</big><em>space_no</em>, <em>...</em><big>)</big><a class="headerlink" href="#Connection.store" title="Permalink to this definition">¶</a></dt>
+<dt id="Connection.replace">
+<tt class="descname">replace</tt><big>(</big><em>space_no</em>, <em>...</em><big>)</big><a class="headerlink" href="#Connection.replace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Insert, Store or Replace a tuple in(to a) space.</p>
+<p>Tuple fields follow space_no.</p>
+<p>If a tuple with the same primary key already exists, insert()
+returns an error, but replace() replaces it.
+If a tuple with the same primary key not exists, replace()
+return and error, but insert() inserts new.
+Store will insert/replace tuple no matter what.</p>
+<div class="highlight-lua"><div class="highlight"><pre><span class="n">conn</span><span class="p">:</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;</span><span class="s">hello&#39;</span><span class="p">,</span> <span class="mi">42</span><span class="p">)</span>
+<span class="c1">-- OR</span>
+<span class="n">conn</span><span class="p">:</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;</span><span class="s">hello&#39;</span><span class="p">,</span> <span class="mi">42</span><span class="p">})</span>
+<span class="c1">-- Both valid and identical</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>space_no</strong> (<em>number</em>) &#8211; number of space to insert tuple into.</li>
+<li><strong>...</strong> (<em>table with strings/number or vararg&#8217;d strings/numbers.</em>) &#8211; tuple to insert/replace/store</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(true, table) if request was OK. Table with inserted tuple(s).</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(false, string) if request can&#8217;t be processed right now. String with error.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">throws error if there was an error in request</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.select">
+<tt class="descname">select</tt><big>(</big><em>space</em>, <em>index</em>, <em>keys</em><span class="optional">[</span>, <em>offset=0</em><span class="optional">[</span>, <em>limit=0xFFFFFFFF</em><span class="optional">]</span><span class="optional">]</span><big>)</big><a class="headerlink" href="#Connection.select" title="Permalink to this definition">¶</a></dt>
+<dd><p>Search for a tuple or tuples in the given space.</p>
+<div class="highlight-lua"><div class="highlight"><pre><span class="c1">-- Next three are identical</span>
+<span class="n">conn</span><span class="p">:</span><span class="nb">select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;</span><span class="s">hello&#39;</span><span class="p">)</span>
+<span class="n">conn</span><span class="p">:</span><span class="nb">select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;</span><span class="s">hello&#39;</span><span class="p">})</span>
+<span class="n">conn</span><span class="p">:</span><span class="nb">select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">{{</span><span class="s1">&#39;</span><span class="s">hello&#39;</span><span class="p">}})</span>
+<span class="c1">-- Next two are identical</span>
+<span class="n">conn</span><span class="p">:</span><span class="nb">select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;</span><span class="s">hello&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;</span><span class="s">world&#39;</span><span class="p">})</span>
+<span class="n">conn</span><span class="p">:</span><span class="nb">select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">{{</span><span class="s1">&#39;</span><span class="s">hello&#39;</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;</span><span class="s">world&#39;</span><span class="p">})</span>
+<span class="c1">-- And this two aren&#39;t</span>
+<span class="n">conn</span><span class="p">:</span><span class="nb">select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;</span><span class="s">hello&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="s">world&#39;</span><span class="p">)</span>
+<span class="n">conn</span><span class="p">:</span><span class="nb">select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">{{</span><span class="s1">&#39;</span><span class="s">hello&#39;</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;</span><span class="s">world&#39;</span><span class="p">})</span>
+<span class="c1">-- This query tries to select all tuples (if index 1 of space 0 is TREE, else error is thrown)</span>
+<span class="n">conn</span><span class="p">:</span><span class="nb">select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">{})</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>space_no</strong> (<em>number</em>) &#8211; number of space to delete tuple from</li>
+<li><strong>index</strong> (<em>number</em>) &#8211; number of index where key must be searched</li>
+<li><strong>key</strong> (<em>table of tables of strings/numbers(many keys) or table with strings/numbers(multipart keys) or string/number</em>) &#8211; keys to select tuple with</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(true, table) if request was OK. Table with selected tuple(s).</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(false, string) if request can&#8217;t be processed right now. String with error.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">throws error if there was an error in request</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.delete">
+<tt class="descname">delete</tt><big>(</big><em>space_no</em>, <em>...</em><big>)</big><a class="headerlink" href="#Connection.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>Delete a tuple identified by a primary key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>space_no</strong> (<em>number</em>) &#8211; number of space to delete tuple from.</li>
+<li><strong>...</strong> (<em>table with strings/number or vararg&#8217;d strings/numbers.</em>) &#8211; primary key to delete tuple with.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(true, table) if request was OK. Table with deleted tuple(s).</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(false, string) if request can&#8217;t be processed right now. String with error.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">throws error if there was an error in request</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.update">
+<tt class="descname">update</tt><big>(</big><em>space_no</em>, <em>key</em>, <em>ops</em><big>)</big><a class="headerlink" href="#Connection.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Update a tuple identified by a primary key. If a key is multipart,
+it is passed in as a Lua table.</p>
+<p>Operations:</p>
+<ul class="simple">
+<li>{&#8216;set&#8217;   , position, value}  - set value in positition <cite>position</cite> to <cite>value</cite> (or &#8216;=&#8217;)</li>
+<li>{&#8216;add&#8217;   , position, number} - add <cite>value</cite> to field in position <cite>position</cite> (or &#8216;+&#8217;)</li>
+<li>{&#8216;and&#8217;   , position, number} - binary and <cite>value</cite> to field in position <cite>position</cite> (or &#8216;&amp;&#8217;)</li>
+<li>{&#8216;xor&#8217;   , position, number} - binary xor <cite>value</cite> to field in position <cite>position</cite> (or &#8216;^&#8217;)</li>
+<li>{&#8216;or&#8217;    , position, number} - binary or <cite>value</cite> to field in position <cite>position</cite> (or &#8216;|&#8217;)</li>
+<li>{&#8216;splice&#8217;, position, from, to, insert} - cut value on position <cite>position</cite> from <cite>from</cite> and up to <cite>to</cite>,then insert <cite>insert</cite> in the middle. (or &#8216;:&#8217;)</li>
+<li>{&#8216;delete&#8217;, position} - delete value in the position <cite>position</cite> (or &#8216;#&#8217;, or &#8216;del&#8217;)</li>
+<li>{&#8216;insert&#8217;, position, value} - insert <cite>value</cite> before the <cite>position</cite> (or &#8216;!&#8217;, or &#8216;ins&#8217;)</li>
+</ul>
+<div class="highlight-lua"><div class="highlight"><pre><span class="n">conn</span><span class="p">:</span><span class="n">update</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;</span><span class="s">hello&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="s">world&#39;</span><span class="p">},</span> <span class="p">{{</span><span class="s1">&#39;</span><span class="s">set&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;</span><span class="s">some new field&#39;</span><span class="p">}})</span>
+<span class="n">conn</span><span class="p">:</span><span class="n">update</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;</span><span class="s">hello&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="s">world&#39;</span><span class="p">},</span> <span class="p">{{</span><span class="s1">&#39;</span><span class="s">=&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">234</span><span class="p">}})</span>
+<span class="n">conn</span><span class="p">:</span><span class="n">update</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;</span><span class="s">hello&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="s">world&#39;</span><span class="p">},</span> <span class="p">{{</span><span class="s1">&#39;</span><span class="s">+&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">234</span><span class="p">}})</span>
+<span class="c1">-- ...</span>
+<span class="n">conn</span><span class="p">.</span><span class="n">splice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;</span><span class="s">hi, matthew&#39;</span><span class="p">,</span> <span class="p">{{</span><span class="s1">&#39;</span><span class="s">+&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">234</span><span class="p">},</span> <span class="p">{</span><span class="s1">&#39;</span><span class="s">^&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">234</span><span class="p">}})</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>space_no</strong> (<em>number</em>) &#8211; number of space to delete tuple from</li>
+<li><strong>key</strong> (<em>table with strings/numbers(multipart key) or string or number</em>) &#8211; primary key to delete tuple with</li>
+<li><strong>ops</strong> (<cite>value</cite> may be number or string, <cite>from</cite> is number, <cite>to</cite> is number, <cite>insert</cite> is string, <cite>position</cite> is number) &#8211; table with operations (as described upper)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(true, table) if request was OK. Table with updated tuple(s).</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(false, string) if request can&#8217;t be processed right now. String with error.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">throws error if there was an error in request</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.call">
+<tt class="descname">call</tt><big>(</big><em>name</em>, <em>...</em><big>)</big><a class="headerlink" href="#Connection.call" title="Permalink to this definition">¶</a></dt>
+<dd><p>Call a remote stored procedure, such as box.select_reverse_range().</p>
+<div class="highlight-lua"><div class="highlight"><pre><span class="n">conn</span><span class="p">:</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;</span><span class="s">box.select_range&#39;</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">conn</span><span class="p">:</span><span class="n">call</span><span class="p">(</span><span class="s1">&#39;</span><span class="s">box.time64&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<em>string</em>) &#8211; name of stored procedure</li>
+<li><strong>...</strong> (<em>table with strings/number or vararg&#8217;d strings/numbers [may be empty]</em>) &#8211; primary key to delete tuple with.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(true, table) if request was OK. Table with returned arguments.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">(false, string) if request can&#8217;t be processed right now. String with error.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">throws error if there was an error in request</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection.ping">
+<tt class="descname">ping</tt><big>(</big><big>)</big><a class="headerlink" href="#Connection.ping" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ping Tarantool server.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">(true, number) if request was OK. Number - is time to response for server.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">(false, string) if request can&#8217;t be processed right now. String with error.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">throws error if there was an error in request.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="Connection._reqid">
+<tt class="descname">_reqid</tt><big>(</big><big>)</big><a class="headerlink" href="#Connection._reqid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Function for counter ID.</p>
+<p>Increments and returns value. Uses self._req_id for storing values.
+0 in the begging.</p>
+<p>You may redefine this function for using your function (when
+you use coroutines or threads for syncing for example.)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Request ID</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Number</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="schema-description">
+<h2>Schema Description<a class="headerlink" href="#schema-description" title="Permalink to this headline">¶</a></h2>
+<p>Typical schema looks like:</p>
+<div class="highlight-lua"><div class="highlight"><pre><span class="n">SCHEMA</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">spaces</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">fields</span>  <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;</span><span class="s">string&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="s">number32&#39;</span><span class="p">},</span>
+            <span class="n">indexes</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">},</span>
+                <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">},</span>
+            <span class="p">}</span>
+        <span class="o">...</span>
+    <span class="p">},</span>
+    <span class="n">funcs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;</span><span class="s">queue.put&#39;</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="p">[</span><span class="n">from</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span>
+            <span class="p">[</span><span class="n">to</span><span class="p">]</span>   <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;</span><span class="s">string&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="s">number64&#39;</span><span class="p">,</span><span class="o">...</span><span class="p">},</span>
+        <span class="p">},</span>
+        <span class="o">...</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>In &#8220;spaces&#8221; field must be table of &#8220;space number&#8221; : &#8220;space specification&#8221;
+Space specification includes fields(table of types) and indexes
+(table of &#8220;index number&#8221; : &#8220;index fields&#8221;). Index fields is table
+of fields number for current index.</p>
+<p>In &#8220;funcs&#8221; fields must be table of &#8220;function name&#8221; : &#8220;table of input
+arguments and table of return values&#8221;. Both of them are table with types.</p>
+<p>Types may be: &#8216;string&#8217;, &#8216;number32&#8217;, &#8216;number64&#8217;.</p>
+<p>This module is not intended to use by user,
+but format of package is described here.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">API and Schema</a><ul>
+<li><a class="reference internal" href="#api">API</a></li>
+<li><a class="reference internal" href="#schema-description">Schema Description</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="index.html"
+                        title="previous chapter">Welcome to tarantool-lua&#8217;s documentation!</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/api.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to tarantool-lua’s documentation!"
+             >previous</a> |</li>
+        <li><a href="index.html">tarantool-lua 0.0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2013, bigbes.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.2b1.
+    </div>
+  </body>
+</html>
