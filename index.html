@@ -8,7 +8,7 @@
     
     <title>Welcome to tarantool-lua’s documentation! &mdash; tarantool-lua 0.0.1 documentation</title>
     
-    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/nature.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
@@ -42,7 +42,6 @@
 
     <div class="document">
       <div class="documentwrapper">
-        <div class="bodywrapper">
           <div class="body">
             
   <div class="section" id="welcome-to-tarantool-lua-s-documentation">
@@ -58,8 +57,7 @@
 </li>
 </ul>
 </div>
-<p>It Supports luajit and lua5.2.
-(It&#8217;s such a stupid idea to use 5.1 - it&#8217;s old and not fast, so why?)</p>
+<p>It Supports luajit, lua5.2 and lua5.1</p>
 <p>Everything is simple:</p>
 <div class="highlight-lua"><div class="highlight"><pre><span class="n">Connection</span> <span class="o">=</span> <span class="nb">require</span><span class="p">(</span><span class="s2">&quot;</span><span class="s">tarantool&quot;</span><span class="p">)</span>
 <span class="n">def_schema</span> <span class="o">=</span> <span class="p">{</span>
@@ -93,6 +91,11 @@
 <span class="n">new_con</span><span class="p">:</span><span class="nb">select</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;</span><span class="s">hello&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
+<p>You may install this library with luarocks:</p>
+<div class="highlight-bash"><div class="highlight"><pre>wget https://raw.github.com/bigbes92/tarantool-lua/master/tarantool-latest-1.rockspec
+luarocks install tarantool-latest-1.rockspec
+</pre></div>
+</div>
 </div>
 <div class="section" id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
@@ -104,40 +107,6 @@
 
 
           </div>
-        </div>
-      </div>
-      <div class="sphinxsidebar">
-        <div class="sphinxsidebarwrapper">
-  <h3><a href="#">Table Of Contents</a></h3>
-  <ul>
-<li><a class="reference internal" href="#">Welcome to tarantool-lua&#8217;s documentation!</a><ul>
-</ul>
-</li>
-<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
-</ul>
-
-  <h4>Next topic</h4>
-  <p class="topless"><a href="api.html"
-                        title="next chapter">API and Schema</a></p>
-  <h3>This Page</h3>
-  <ul class="this-page-menu">
-    <li><a href="_sources/index.txt"
-           rel="nofollow">Show Source</a></li>
-  </ul>
-<div id="searchbox" style="display: none">
-  <h3>Quick search</h3>
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
-      <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
-    </form>
-    <p class="searchtip" style="font-size: 90%">
-    Enter search terms or a module, class or function name.
-    </p>
-</div>
-<script type="text/javascript">$('#searchbox').show(0);</script>
-        </div>
       </div>
       <div class="clearer"></div>
     </div>
