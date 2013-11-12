@@ -1,47 +1,8 @@
------------------------------------
--- Schema for tarantool-lua-connector
--- Typical schema looks like:
---  SCHEMA = {
---      spaces = {
---          [0] = {
---              fields  = {'string', 'number32'},
---              indexes = {
---                  [0] = {0},
---                  [1] = {1, 2},
---              }
---          ...
---      },
---      funcs = {
---          'queue.put' = {
---              [from] = {...},
---              [to]   = {'string', 'number64',...},
---          },
---          ...
---      }
---  }
--- In "spaces" field must be table of "space number" : "space specification"
--- Space specification includes fields(table of types) and indexes
--- (table of "index number" : "index fields"). Index fields is table
--- of fields number for current index.
---
--- In "funcs" fields must be table of "function name" : "table of input
--- arguments and table of return values". Both of them are table with types.
---
--- Types may be: 'string', 'number32', 'number64'.
---
--- This module is not intended to use by user,
--- but format of package is described here.
-
--- module: schema
-
 local pack = require("pack")
 local h    = require("tnthelpers")
 local checkt  = h.checkt
 local checkte = h.checkte
 
---------
---  possible values: 'string', 'number32', 'number64'
--------
 local Schema = {
     pack_int32 = pack.pack_L,
     pack_int64 = pack.pack_Q,

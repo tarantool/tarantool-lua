@@ -6,10 +6,6 @@ local tarantool = {
     _DESCRIPTION = "Lua library for the tarantool k-v storage system",
 }
 
--- DEBUG
-local yaml   = require("yaml")
---------
-
 local tnt    = require("tnt")
 local Schema = require("schema")
 local h      = require("tnthelpers")
