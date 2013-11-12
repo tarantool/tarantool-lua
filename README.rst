@@ -1,19 +1,8 @@
-.. tarantool-lua documentation master file, created by
-   sphinx-quickstart on Mon Nov 11 15:57:36 2013.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to tarantool-lua's documentation!
-=========================================
+==========================================
+tarantool-lua: Tarantool Connector for Lua
+==========================================
 
 Tarantool connector for Lua.
-
-Contents:
-
-.. toctree::
-    :maxdepth: 2
-    
-    api
 
 It Supports luajit, lua5.2 and lua5.1
 
@@ -55,13 +44,6 @@ Everything is simple:
 You may install this library with luarocks:
 
 .. code-block:: bash
-        
-        wget https://raw.github.com/bigbes92/tarantool-lua/master/tarantool-latest-1.rockspec
-        luarocks install tarantool-latest-1.rockspec
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`search`
-
+    
+    wget https://raw.github.com/bigbes92/tarantool-lua/master/tarantool-latest-1.rockspec
+    luarocks install tarantool-latest-1.rockspec
