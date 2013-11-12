@@ -1,5 +1,5 @@
-local pack = require("pack")
-local h    = require("tnthelpers")
+local pack = require("tnt_pack")
+local h    = require("tnt_helpers")
 local checkt  = h.checkt
 local checkte = h.checkte
 

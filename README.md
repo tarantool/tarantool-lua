@@ -3,8 +3,7 @@ tarantool-lua
 
 Tarantool connector for Lua.
 
-It Supports luajit and lua5.2.
-(It's such a stupid idea to use 5.1 - it's old and not fast, so why?)
+It Supports luajit, lua5.2 and lua5.1
 
 Everything is simple:
 
@@ -40,5 +39,3 @@ new_con:insert(0, {'hello', 123, 123456})
 new_con:insert(0, {'hello_1', 123, 1234567})
 new_con:select(0, 1, 'hello')
 ```
-
-

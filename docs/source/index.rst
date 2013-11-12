@@ -15,8 +15,7 @@ Contents:
     
     api
 
-It Supports luajit and lua5.2.
-(It's such a stupid idea to use 5.1 - it's old and not fast, so why?)
+It Supports luajit, lua5.2 and lua5.1
 
 Everything is simple:
 

@@ -108,7 +108,7 @@ static const struct luaL_Reg packlib[] = {
 	{NULL, NULL}
 };
 
-int luaopen_pack(lua_State *L) {
+int luaopen_tnt_pack(lua_State *L) {
 	luaL_newlib(L, packlib);
 	return 1;
 }

@@ -8,17 +8,16 @@ CFLAGS		= -O2 -Wall -shared -fPIC -fexceptions $(LUA_CFLAGS) -I.
 LDFLAGS		= -shared -g $(LUA_LDFLAGS)
 
 CC 			= gcc
-OUTPUT		= pack.so
+OUTPUT		= tnt_pack.so
 
 OBJS = pack.o
 
 .PHONY: all clean dist test t
 
-all: pack.so
+all: tnt_pack.so
 
-pack.so: pack.o
+tnt_pack.so: pack.o
 	$(CC) $(LDFLAGS) -o ${OUTPUT} ${OBJS}
 
 clean:
 	rm -f *.so *.o pack/*.so
-

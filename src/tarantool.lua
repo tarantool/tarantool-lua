@@ -7,8 +7,8 @@ local tarantool = {
 }
 
 local tnt    = require("tnt")
-local Schema = require("schema")
-local h      = require("tnthelpers")
+local Schema = require("tnt_schema")
+local h      = require("tnt_helpers")
 
 local map                = h.map
 local apply              = h.apply
