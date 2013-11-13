@@ -4,6 +4,8 @@ default.host = '127.0.0.1'
 default.port = 33013
 -----
 do
+    print("------------------------------------------------------------------------")
+    print("-------------------------- TARANTOOL DEPENDENT TESTS -------------------")
     tarantool = require "tarantool"
     stat, err = pcall(tarantool, {host=default.host, port=default.port})
     if stat == false then
@@ -47,13 +49,21 @@ function bfr()
             }
         },
         funcs = {
+            ['box.time'] = {
+                ['in'] = {},
+                ['out'] = {'number32'}
+            },
+            ['box.time64'] = {
+                ['in'] = {},
+                ['out'] = {'number64'}
+            },
             ['test.a'] = {
-                ['in'] = {'number32', 'number32', 'string', 'string'},
-                ['out'] = {'number32', 'number32', 'string', 'string'}
+                ['in'] = {'number32', 'number64', 'string', 'string'},
+                ['out'] = {'string', 'string', 'number64', 'number32'}
             },
             ['test.b'] = {
                 ['in'] = {'string'},
-                ['out'] = {'string'}
+                ['out'] = {'number32', 'number64'}
             }
         }
     }
@@ -195,7 +205,19 @@ context(
         end
     )
     test(
-        "CALL"
+        "CALL",
+        function ()
+            local function isnum(arg)
+                if type(arg) == 'number' then return true end
+                return false
+            end
+            assert_true(isnum(({conn:call('box.time')})[2][1][1]))
+            assert_true(isnum(({conn:call('box.time64')})[2][1][1]))
+            assert_true(test_response({conn:call('test.a', 1, 2, 'hello', 'world')}, true, {
+                {'hello', 'world', 2, 1}}))
+            assert_true(test_response({conn:call('test.b', '12345')}, true, {
+                {12345, 12345}}))
+        end
     )
     end
 )

@@ -1,3 +1,8 @@
+do
+    print("------------------------------------------------------------------------")
+    print("------------------------- TARANTOOL INDEPENDENT TESTS ------------------")
+end
+
 context(
     "RequestParser",
     function()
@@ -177,7 +182,7 @@ context(
             function()
                 yaml = require("yaml")
                 tnt  = require("tnt" )
-                rp = tnt.response_parser_new() 
+                rp = tnt.response_parser_new()
                 sr1 = "\13\0\0\0\28\0\0\0\1\0\0\0\0\0\0\0\1\0\0\0\12\0\0\0\2\0\0\0\4\104\101\108\49\6\119\111\114\108\100\49"
                 tr1 = yaml.load("\
 ---\
