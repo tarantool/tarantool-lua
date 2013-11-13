@@ -1,10 +1,13 @@
 LUAV?=5.2
+TARANTOOL_PATH=~/src/stable/test/var/tarantool_box
 
 test:
-	rm -rf *.xlog
-	~/src/stable/test/var/tarantool_box &
+	rm -rf *.xlog *.snap
+	$(TARANTOOL_PATH) --init-storage
+	$(TARANTOOL_PATH) &
 	sleep 0.5
 	lua$(LUAV) tsc -f RPRB.suite.lua
+	echo
 	lua$(LUAV) tsc -f TNT.suite.lua
 	killall tarantool_box
 
