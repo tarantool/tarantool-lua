@@ -45,5 +45,5 @@ You may install this library with luarocks:
 
 .. code-block:: bash
     
-    wget https://raw.github.com/bigbes92/tarantool-lua/master/tarantool-latest-1.rockspec
-    luarocks install tarantool-latest-1.rockspec
+    $ wget https://raw.github.com/bigbes92/tarantool-lua/master/tarantool-latest-1.rockspec
+    $ luarocks install tarantool-latest-1.rockspec

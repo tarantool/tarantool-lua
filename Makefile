@@ -51,6 +51,9 @@ clean:
 	rm -f *.so
 	rm -f $(OBJS)
 
+docs:
+	make -C docs html
+
 test:
 	 LUAV=$(LUAV) make -C test test
 

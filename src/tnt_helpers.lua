@@ -37,6 +37,9 @@ end
 
 function helpers.tbl_level(element)
     if helpers.checkt(element, 'table') then
+        if #element == 0 then
+            return 1
+        end
         return math.max(unpack(helpers.map(helpers.tbl_level, element))) + 1
     end
     return 0

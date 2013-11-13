@@ -56,7 +56,7 @@ local Schema = {
         end
         for i = first, #tuple do
             if type(tuple[i]) == 'number' then
-                val = self.pack_int32(args[i])
+                val = self.pack_int64(tuple[i])
             elseif type(tuple[i]) == 'string' then
                 val = tuple[i]
             else

@@ -294,7 +294,7 @@ int ltnt_requestbuilder_update(struct lua_State *L) {
 				luaL_error(L, "Bad op argument: (string or number expected, got %s)",
 					lua_typename(L, lua_type(L, -1)));
 			}
-			if (tp_op(*iproto, op, field, data, len) == -1) {
+			if (tp_op(*iproto, field, op, data, len) == -1) {
 				lua_pushboolean(L, 0);
 				lua_pushstring(L, "tp.h memory error");
 				return 2;
