@@ -258,21 +258,20 @@ int ltnt_requestbuilder_update(struct lua_State *L) {
 		if (!lua_istable(L, opcur))
 			luaL_error(L, "Bad table construction: (table expected, got %s)",
 					lua_typename(L, lua_type(L, -1)));
-		lua_pushnil(L);
-		lua_next(L, opcur);
+		ltnt_getindex(L, opcur, 1);
 		uint8_t op = (uint8_t )luaL_checkint(L, -1);
 		lua_pop(L, 1);
-		lua_next(L, opcur);
+		ltnt_getindex(L, opcur, 2);
 		uint32_t field = (uint32_t )luaL_checkint(L, -1);
 		lua_pop(L, 1);
-		lua_next(L, opcur);
+		ltnt_getindex(L, opcur, 3);
 		if (op == TNT_OP_SPLICE) {
 			uint32_t offset = (uint32_t )luaL_checkint(L, -1);
 			lua_pop(L, 1);
-			lua_next(L, opcur);
+			ltnt_getindex(L, opcur, 4);
 			uint32_t cut = (uint32_t )luaL_checkint(L, -1);
 			lua_pop(L, 1);
-			lua_next(L, opcur);
+			ltnt_getindex(L, opcur, 5);
 			size_t len = 0;
 			const char *data = ltnt_checkstring(L, -1, &len);
 			if (tp_opsplice(*iproto, field, offset,
@@ -300,7 +299,7 @@ int ltnt_requestbuilder_update(struct lua_State *L) {
 				return 2;
 			}
 		}
-		lua_pop(L, 3);
+		lua_pop(L, 2);
 	}
 	lua_pushboolean(L, 1);
 	lua_pushnil(L);

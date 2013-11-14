@@ -85,7 +85,10 @@ function bfr()
     end
 
     function test_response(table, status, answer)
-        if table[1] == status and deepcompare(table[2], answer) then return true end
+        if  (table[1]==status and status==true and deepcompare(table[2], answer)) or
+            (table[1]==status and status==false and string.find(table[2], answer, 1, true) ~= nil) then
+            return true
+        end
         return false
     end
 

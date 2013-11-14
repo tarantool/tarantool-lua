@@ -193,6 +193,9 @@ local Schema = {
 Schema.__index = Schema
 Schema.new = function (schema)
     local self = {}
+    if table.unpack == nil then
+        table.unpack = unpack
+    end
     setmetatable(self, Schema)
     self:set(schema)
     return self

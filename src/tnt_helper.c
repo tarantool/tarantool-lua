@@ -49,6 +49,15 @@ ltnt_checkrequestbuilder(struct lua_State *L, int narg) {
 	return (struct tp **) luaL_checkudata(L, narg, "RequestBuilder");
 }
 
+inline int
+ltnt_getindex(struct lua_State *L, int narg, int pos) {
+	if (narg < 0)
+		narg = lua_gettop(L) + narg + 1;
+	lua_pushnumber(L, pos);
+	lua_gettable(L, narg);
+	return 0;
+}
+
 int ltnt_pushtuple(struct lua_State *L, struct tp **iproto, int narg) {
 	if (narg < 0)
 		narg = lua_gettop(L) + narg + 1;

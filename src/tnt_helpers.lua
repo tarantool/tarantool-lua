@@ -31,7 +31,11 @@ end
 
 function helpers.map(func, array)
     local new_array = {}
-    for k, v in pairs(array) do table.insert(new_array, k, func(v))  end
+    cur = 1
+    while array[cur] ~= nil do
+        table.insert(new_array, cur, func(array[cur]))
+        cur = cur + 1
+    end
     return new_array
 end
 

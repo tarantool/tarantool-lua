@@ -23,7 +23,17 @@ local gettime            = __s.gettime
 local tcp                = __s.tcp
 
 function table.pack(...)
-    return { n = select("#", ...), ... }
+    return {n = select("#", ...), ...}
+end
+
+function HexDump(str, spacer)
+    return (
+        string.gsub(str, '(.)',
+            function (c)
+                return string.format("%02X%s", string.byte(c), spacer or "")
+            end
+        )
+    )
 end
 ----------------- MTBL ---------------------------------
 
@@ -256,18 +266,20 @@ local Connection = {
             checkte(v[1], 'string', 'op type', 'Connection.update')
             checkte(v[2], 'number', 'op position', 'Connection.update')
             if self.update_ops[v[1] ] == nil then
-                self.error(string.format("Update error: wrong op-n `%s`", v[0]))
+                self.error(string.format("Update error: wrong op-n `%s`", v[1]))
             end
-            if #v ~= (self.update_ops[v[1] ][2] + 1) then
+            if #v ~= (self.update_ops[v[1]][2] + 1) then
                 self.error(string.format("Update error: wrong number"..
                                               " of arguments in op number"..
                                               " %d: must be %d, but %d given",
-                                              k, self.update_ops[v[1] ][2], k))
+                                              k, self.update_ops[v[1]][2], #v))
             end
-            v[1] = self.update_ops[v[1] ][1]
+            v[1] = self.update_ops[v[1]][1]
             if v[1] == tnt.ops.OP_DELETE then
                 v[3] = 1
             elseif v[1] == tnt.ops.OP_SPLICE then
+                checkte(v[3], 'number', 'from', 'Connection.update')
+                checkte(v[4], 'number', 'to', 'Connection.update')
                 if not checkt(v[5], 'string') then
                     self.error(string.format("Update error: splice may"..
                                                 " work only on strings,"..
