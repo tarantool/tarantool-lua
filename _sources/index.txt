@@ -3,6 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+=========================================
 Welcome to tarantool-lua's documentation!
 =========================================
 
@@ -55,9 +56,12 @@ Everything is simple:
 You may install this library with luarocks:
 
 .. code-block:: bash
-        
-        wget https://raw.github.com/bigbes92/tarantool-lua/master/tarantool-latest-1.rockspec
-        luarocks install tarantool-latest-1.rockspec
+
+        # latest (unstable) version
+        $ wget https://raw.github.com/bigbes92/tarantool-lua/master/rocks/tarantool-latest-1.rockspec
+        # latest (stable) version
+        $ wget https://raw.github.com/bigbes92/tarantool-lua/master/rocks/tarantool-0.0.1-1.rockspec
+        $ luarocks install tarantool-{VERSION}.rockspec --local
 
 Indices and tables
 ==================
