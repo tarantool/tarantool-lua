@@ -57,6 +57,4 @@ docs:
 test:
 	 LUAV=$(LUAV) make -C test test
 
-test_new:
-	 LUAV=$(LUAV) make -C test test_new
-.PHONY: luasocket yaml test
+.PHONY: all libs luasocket yaml telescope pack clean-all clean docs test test_new
