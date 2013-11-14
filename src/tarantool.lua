@@ -442,38 +442,5 @@ setmetatable(Connection, {
         return cls.connect(...)
     end,
 })
------------------ API ----------------------------------
---
---
--- def_schema = {
---     default = 'string',
---     spaces = {
---         [0] = {
---             fields  = {'string', 'number32', 'number32', 'string', 'number64', 'number32'},
---             indexes = {
---                 [0] = {0},
---                 [1] = {1, 2},
---                 [2] = {3, 4, 5}
---             },
---         },
---     }
--- }
---
---
--- conn = Connection{host='127.0.0.1', port=33013, schema=def_schema}
--- ans = {conn:store(0, {'1', 2, 3, 'lol', 1111111, 111})}
--- print(yaml.dump(ans))
--- ans = {conn:store(0, {'2', 2, 3, 'lol', 1111111, 111})}
--- print(yaml.dump(ans))
--- ans = {conn:store(0, {'3', 2, 3, 'lol', 1111111, 111})}
--- print(yaml.dump(ans))
--- ans = {conn:select(0, 1, {2})}
--- print(yaml.dump(ans))
--- conn = Connection{host='127.0.0.1'}
--- ans = {conn:select(0, 0, {'2'})}
--- print(yaml.dump(ans))
--- conn = Connection{}
--- ans = {conn:select(0, 0, {'2'})}
--- print(yaml.dump(ans))
 
 return Connection
