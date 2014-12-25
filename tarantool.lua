@@ -1,4 +1,4 @@
-module("lib.tarantool", package.seeall)
+module("tarantool", package.seeall)
 local mp       = require("MessagePack")
 local math     = require("math")
 local string   = string
