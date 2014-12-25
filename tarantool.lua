@@ -1,4 +1,5 @@
 module("tarantool", package.seeall)
+
 local mp       = require("MessagePack")
 local math     = require("math")
 local string   = string
@@ -70,7 +71,6 @@ function _tarantool_request(host, port, header, body)
         ngx.log(ngx.ERR, "Failed to connect to tarantool: " .. hp .. err)
         return
     end
-
 
     local count, err = sock:getreusedtimes()
     if count == 0 then
