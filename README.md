@@ -35,6 +35,6 @@ local result, err = tarantool.delete(host, port, spaceno, key)
 
 local result, err = tarantool.ping(host, port)
 
-local result, err = tarantool.call(host, port, "proc_name", { "first arg", "second arg" })
+local result, err = tarantool.call(host, port, "proc_name", { "first arg" })
 
 ```
