@@ -22,10 +22,9 @@ local port    = 3301
 local spaceno = 1
 local indexno = 0
 local key     = { 1 }
-local opts    = { }
 local tuple   = { "first field", "second field" }
 
-local result, err = tarantool.select(host, port, spaceno, indexno, key, opts)
+local result, err = tarantool.select(host, port, spaceno, indexno, key)
 
 local result, err = tarantool.insert(host, port, spaceno, tuple)
 
