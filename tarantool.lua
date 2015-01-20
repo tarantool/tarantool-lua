@@ -1,51 +1,396 @@
 module("tarantool", package.seeall)
 
-local mp       = require("MessagePack")
-local math     = require("math")
-local string   = string
-local table    = table
-local ngx      = ngx
-local type     = type
-local ipairs   = ipairs
-local assert   = assert
-local error    = error
-local tostring = tostring
+local mp     = require("MessagePack")
+local C      = require("const")
+local string = string
+local table  = table
+local ngx    = ngx
+local type   = type
+local ipairs = ipairs
+local error  = error
 
--- constants
-local REQUEST_PER_CONNECTION = 10000
-local GREETING_SIZE          = 128
-local LEN_HEADER_SIZE        = 5
+mp.set_integer('unsigned')
 
--- packet codes
-local OK         = 0
-local SELECT     = 1
-local INSERT     = 2
-local REPLACE    = 3
-local UPDATE     = 4
-local DELETE     = 5
-local CALL       = 6
-local AUTH       = 7
-local PING       = 64
-local ERROR_TYPE = 65536
+function new(self, params)
+    local obj = {
+        host           = C.HOST,
+        port           = C.PORT,
+        user           = C.USER,
+        password       = C.PASSWORD,
+        socket_timeout = C.SOCKET_TIMEOUT,
+        connect_now    = C.CONNECT_NOW,
+    }
 
--- packet keys
-local TYPE          = 0x00
-local SYNC          = 0x01
-local SPACE_ID      = 0x10
-local INDEX_ID      = 0x11
-local LIMIT         = 0x12
-local OFFSET        = 0x13
-local ITERATOR      = 0x14
-local KEY           = 0x20
-local TUPLE         = 0x21
-local FUNCTION_NAME = 0x22
-local USER          = 0x23
-local DATA          = 0x30
-local ERROR         = 0x31
+    if params and type(params) == 'table' then
+        for key, value in pairs(obj) do
+            if params[key] ~= nil then
+                obj[key] = params[key]
+            end
+        end
+    end
 
-mp.set_integer'unsigned'
+    local sock, err = ngx.socket.tcp()
+    if not sock then
+        return nil, err
+    end
 
-function prepare_key(value)
+    if obj.socket_timeout then
+        sock:settimeout(obj.socket_timeout)
+    end
+
+    obj.sock     = sock
+    obj._spaces  = {}
+    obj._indexes = {}
+    obj = setmetatable(obj, { __index = self })
+
+    if obj.connect_now then
+        local ok, err = obj:connect()
+        if not ok then
+            return nil, err
+        end
+    end
+
+    return obj
+end
+
+function connect(self, host, port)
+    if not self.sock then
+        return nil, "no socket created"
+    end
+    local ok, err = self.sock:connect(host or self.host, tonumber(port or self.port))
+    if not ok then
+        return ok, err
+    end
+
+    return self:_handshake()
+end
+
+function disconnect(self)
+    if not self.sock then
+        return nil, "no socket created"
+    end
+    return self.sock:close()
+end
+
+function set_keepalive(self)
+    if not self.sock then
+        return nil, "no socket created"
+    end
+    local ok, err = self.sock:setkeepalive()
+    if not ok then
+        self:disconnect()
+        return nil, err
+    end
+    return ok
+end
+
+function select(self, space, index, key, opts)
+    if opts == nil then
+        opts = {}
+    end
+
+    local spaceno, err = self:_resolve_space(space)
+    if not spaceno then
+        return nil, err
+    end
+
+    local indexno, err = self:_resolve_index(spaceno, index)
+    if not indexno then
+        return nil, err
+    end
+
+    local body = {
+        [C.SPACE_ID] = spaceno,
+        [C.INDEX_ID] = indexno,
+        [C.KEY]      = _prepare_key(key)
+    }
+
+    if opts.limit ~= nil then
+        body[C.LIMIT] = tonumber(opts.limit)
+    else
+        body[C.LIMIT] = C.MAX_LIMIT
+    end
+    if opts.offset ~= nil then
+        body[C.OFFSET] = tonumber(opts.offset)
+    else
+        body[C.OFFSET] = 0
+    end
+
+    if type(opts.iterator) == 'number' then
+        body[C.ITERATOR] = opts.iterator
+    end
+
+    local response, err = self:_request({ [ C.TYPE ] = C.SELECT }, body )
+    if err then
+        return nil, err
+    elseif response and response.code ~= C.OK then
+        return nil, (response and response.error or "Internal error")
+    else
+        return response.data
+    end
+end
+
+function insert(self, space, tuple)
+    local spaceno, err = self:_resolve_space(space)
+    if not spaceno then
+        return nil, err
+    end
+
+    local response, err = self:_request({ [C.TYPE] = C.INSERT }, { [C.SPACE_ID] = spaceno, [C.TUPLE] = tuple })
+    if err then
+        return nil, err
+    elseif response and response.code ~= C.OK then
+        return nil, (response and response.error or "Internal error")
+    else
+        return response.data
+    end
+end
+
+function replace(self, space, tuple)
+    local spaceno, err = self:_resolve_space(space)
+    if not spaceno then
+        return nil, err
+    end
+
+    local response, err = self:_request({ [C.TYPE] = C.REPLACE }, { [C.SPACE_ID] = spaceno, [C.TUPLE] = tuple })
+    if err then
+        return nil, err
+    elseif response and response.code ~= C.OK then
+        return nil, (response and response.error or "Internal error")
+    else
+        return response.data
+    end
+end
+
+function delete(self, space, key)
+    local spaceno, err = self:_resolve_space(space)
+    if not spaceno then
+        return nil, err
+    end
+
+    local response, err = self:_request({ [C.TYPE] = C.DELETE }, { [C.SPACE_ID] = spaceno, [C.KEY] = _prepare_key(key) })
+    if err then
+        return nil, err
+    elseif response and response.code ~= C.OK then
+        return nil, (response and response.error or "Internal error")
+    else
+        return response.data
+    end
+end
+
+function update(self, space, index, key, oplist)
+    local spaceno, err = self:_resolve_space(space)
+    if not spaceno then
+        return nil, err
+    end
+
+    local indexno, err = self:_resolve_index(spaceno, index)
+    if not indexno then
+        return nil, err
+    end
+
+    local response, err = self:_request({ [C.TYPE] = C.UPDATE }, {
+            [C.SPACE_ID] = spaceno,
+            [C.INDEX_ID] = indexno,
+            [C.KEY]      = _prepare_key(key),
+            [C.TUPLE]    = oplist,
+        })
+    if err then
+        return nil, err
+    elseif response and response.code ~= C.OK then
+        return nil, (response and response.error or "Internal error")
+    else
+        return response.data
+    end
+end
+
+function ping(self)
+    local response, err = self:_request({ [ C.TYPE ] = C.PING }, {} )
+    if err then
+        return nil, err
+    elseif response and response.code ~= C.OK then
+        return nil, (response and response.error or "Internal error")
+    else
+        return "PONG"
+    end
+end
+
+function call(self, proc, args)
+    local response, err = self:_request({ [ C.TYPE ] = C.CALL }, { [C.FUNCTION_NAME] = proc, [C.TUPLE] = args } )
+    if err then
+        return nil, err
+    elseif response and response.code ~= C.OK then
+        return nil, (response and response.error or "Internal error")
+    else
+        return response.data
+    end
+end
+
+function _resolve_space(self, space)
+    if type(space) == 'number' then
+        return space
+    elseif type(space) == 'string' then
+        if self._spaces[space] then
+            return self._spaces[space]
+        end
+    else
+        return nil, 'Invalid space identificator: ' .. space
+    end
+
+    local data, err = self:select(C.SPACE_SPACE, C.INDEX_SPACE_NAME, space)
+    if not data or not data[1] or not data[1][1] or err then
+        return nil, (err or 'Can\'t find space with identificator: ' .. space)
+    end
+
+    self._spaces[space] = data[1][1]
+    return self._spaces[space]
+end
+
+function _resolve_index(self, space, index)
+    if type(index) == 'number' then
+        return index
+    elseif type(index) == 'string' then
+        if self._indexes[index] then
+            return self._indexes[index]
+        end
+    else
+        return nil, 'Invalid index identificator: ' .. index
+    end
+
+    local spaceno, err = self:_resolve_space(space)
+    if not spaceno then
+        return nil, err
+    end
+
+    local data, err = self:select(C.SPACE_INDEX, C.INDEX_INDEX_NAME, { spaceno, index })
+    if not data or not data[1] or not data[1][2] or err then
+        return nil, (err or 'Can\'t find index with identificator: ' .. index)
+    end
+
+    self._indexes[index] = data[1][2]
+    return self._indexes[index]
+end
+
+function _handshake(self)
+    local count, err = self.sock:getreusedtimes()
+    local greeting, greeting_err
+    if count == 0 then
+        greeting, greeting_err = self.sock:receive(C.GREETING_SIZE)
+        if not greeting or greeting_err then
+            self.sock:close()
+            return nil, greeting_err
+        end
+        self._salt = string.sub(greeting, C.GREETING_SALT_OFFSET + 1)
+        self._salt = string.sub(ngx.decode_base64(self._salt), 1, 20)
+        return self:_authenticate()
+    end
+    return true
+end
+
+function _authenticate(self)
+    if not self.user then
+        return true
+    end
+    local step_1   = ngx.sha1_bin(self.password)
+    local step_2   = ngx.sha1_bin(step_1)
+    local step_3   = ngx.sha1_bin(self._salt .. step_2)
+    local scramble = _xor(step_1, step_3)
+    local response, err = self:_request({ [C.TYPE] = C.AUTH }, { [C.USER_NAME] = self.user , [C.TUPLE] = { "chap-sha1", scramble } })
+    if err then
+        return nil, err
+    elseif response and response.code ~= C.OK then
+        return nil, (response and response.error or "Internal error")
+    else
+        return true
+    end
+end
+
+function _request(self, header, body)
+    local sock = self.sock
+
+    if type(header) ~= 'table' then
+        return nil, 'invlid request header'
+    end
+
+    self.sync_num = ((self.sync_num or 0) + 1) % C.REQUEST_PER_CONNECTION
+    if not header[C.SYNC] then
+        header[C.SYNC] = self.sync_num
+    else
+        self.sync_num = header[C.SYNC]
+    end
+    local request    = _prepare_request(header, body)
+    local bytes, err = sock:send(request)
+    if bytes == nil then
+        sock:close()
+        return nil, "Failed to send request: " .. err
+    end
+
+    local size, err = sock:receive(C.HEAD_BODY_LEN_SIZE)
+    if not size then
+        sock:close()
+        return nil, "Failed to get response size: " .. err
+    end
+
+    size = mp.unpack(size)
+    if not size then
+        sock:close()
+        return nil, "Client get response invalid size"
+    end
+
+    local header_and_body, err = sock:receive(size)
+    if not header_and_body then
+        sock:close()
+        return nil,  "Failed to get response header and body: " .. err
+    end
+
+    local iterator = mp.unpacker(header_and_body)
+    local value, res_header = iterator()
+    if type(res_header) ~= 'table' then
+        return nil, "Invalid header: " .. type(res_header) .. " (table expected)"
+    end
+    if res_header[C.SYNC] ~= self.sync_num then
+        return nil, "Invalid header SYNC: request: " .. self.sync_num .. " response: " .. res_header[C.SYNC]
+    end
+
+    local value, res_body = iterator()
+    if type(res_body) ~= 'table' then
+        res_body = {}
+    end
+
+    return { code = res_header[C.TYPE], data = res_body[C.DATA], error = res_body[C.ERROR] }
+end
+
+function _prepare_request(h, b)
+    local header = mp.pack(h)
+    local body   = mp.pack(b)
+    local len    = mp.pack(string.len(header) + string.len(body))
+    return len .. header .. body
+end
+
+function _xor(str_a, str_b)
+    function _bxor (a, b)
+        local r = 0
+        for i = 0, 31 do
+            local x = a / 2 + b / 2
+            if x ~= math.floor(x) then
+                r = r + 2^i
+            end
+            a = math.floor(a / 2)
+            b = math.floor(b / 2)
+        end
+        return r
+    end
+    local result = ''
+    if string.len(str_a) ~= string.len(str_b) then
+        return
+    end
+    for i = 1, string.len(str_a) do
+        result = result .. string.char(_bxor(string.byte(str_a, i), string.byte(str_b, i)))
+    end
+    return result
+end
+
+function _prepare_key(value)
     if type(value) == 'table' then
         return value
     elseif value == nil then
@@ -54,175 +399,3 @@ function prepare_key(value)
         return { value }
     end
 end
-
-function prepare_request(h, b)
-    local header = mp.pack(h)
-    local body   = mp.pack(b)
-    local len    = mp.pack(string.len(header) + string.len(body))
-    return len .. header .. body
-end
-
-function _tarantool_request(host, port, header, body)
-    local sock = ngx.socket.tcp()
-
-    local hp = "host: " .. tostring(host or "nil") .. " port: " .. tostring(port or "nil") .. " error: "
-    local ok, err = sock:connect(host, port)
-    if not ok then
-        ngx.log(ngx.ERR, "Failed to connect to tarantool: " .. hp .. err)
-        return
-    end
-
-    local count, err = sock:getreusedtimes()
-    if count == 0 then
-        local greeting, err = sock:receive(GREETING_SIZE)
-        if not greeting or greeting_err then
-            ngx.log(ngx.ERR, "Client get response size: ", greeting, " error: ", err)
-            sock:close()
-            return
-        end
-    end
-
-    local sync_num = math.floor(math.random(REQUEST_PER_CONNECTION))
-    if not header[SYNC] then
-        header[SYNC] = sync_num
-    else
-        sync_num = header[SYNC]
-    end
-
-    local request    = prepare_request(header, body)
-    local bytes, err = sock:send(request)
-    if bytes == nil then
-        ngx.log(ngx.ERR, "Failed to send request: " .. hp .. err)
-        sock:close()
-        return
-    end
-
-    local size, err = sock:receive(LEN_HEADER_SIZE)
-    if not size then
-        ngx.log(ngx.ERR, "Failed to get response size: ", err)
-        sock:close()
-        return
-    end
-
-    size = mp.unpack(size)
-    if not size then
-        ngx.log(ngx.ERR, "Client get response size: ", size)
-        sock:close()
-        return
-    end
-
-    local header_body, err = sock:receive(size)
-    if not header_body then
-        ngx.log(ngx.ERR, "Failed to get response header and body: ", err)
-        sock:close()
-        return
-    end
-
-    local ok, err = sock:setkeepalive()
-    if not ok then
-        sock:close()
-        ngx.log(ngx.ERR, "failed to setkeepalive: " .. hp .. err)
-    end
-
-    local iterator = mp.unpacker(header_body)
-
-    local value, res_header = iterator()
-    if not res_header then
-        ngx.log(ngx.ERR, "Failed to parse response header: ", res_header)
-        return
-    end
-    if type(res_header) ~= 'table' then
-        ngx.log(ngx.ERR, "Invalid header type ", type(res_header))
-        return
-    end
-    if res_header[SYNC] ~= sync_num then
-        ngx.log(ngx.ERR, "Invalid header SYNC: request: ", sync_num, " response: ", res_header[SYNC])
-        return
-    end
-
-    local value, res_body = iterator()
-    if header[TYPE] == PING then
-        return 'PONG'
-    end
-    if not res_body then
-        ngx.log(ngx.ERR, "Failed to parse response body: ", res_body)
-        return
-    end
-    if type(res_body) ~= 'table' then
-        ngx.log(ngx.ERR, "Invalid header type ", type(res_body))
-        return
-    end
-
-    if res_header[TYPE] ~= OK then
-        return nil, res_body[ERROR]
-    end
-
-    return res_body[DATA]
-end
-
-function select(host, port, spaceno, indexno, key, opts)
-    if opts == nil then
-        opts = {}
-    end
-    if spaceno == nil or type(spaceno) ~= 'number' then
-        ngx.log(ngx.ERR, 'no such space #', spaceno)
-    end
-
-    if indexno == nil or type(indexno) ~= 'number' then
-        ngx.log(ngx.ERR, 'no such index #', indexno)
-    end
-
-    local body = {
-        [SPACE_ID] = spaceno,
-        [INDEX_ID] = indexno,
-        [KEY]      = prepare_key(key)
-    }
-
-    if opts.limit ~= nil then
-        body[LIMIT] = tonumber(opts.limit)
-    else
-        body[LIMIT] = 0xFFFFFFFF
-    end
-    if opts.offset ~= nil then
-        body[OFFSET] = tonumber(opts.offset)
-    else
-        body[OFFSET] = 0
-    end
-
-    -- TODO: handle iterator
-
-    return _tarantool_request(host, port, { [ TYPE ] = SELECT }, body )
-end
-
-function insert(host, port, spaceno, tuple)
-    return _tarantool_request(host, port, { [TYPE] = INSERT }, { [SPACE_ID] = spaceno, [TUPLE] = tuple })
-end
-
-function replace(host, port, spaceno, tuple)
-    return _tarantool_request(host, port, { [TYPE] = REPLACE }, { [SPACE_ID] = spaceno, [TUPLE] = tuple })
-end
-
-function delete(host, port, spaceno, key)
-    return _tarantool_request(host, port, { [TYPE] = DELETE }, { [SPACE_ID] = spaceno, [KEY] = prepare_key(key) })
-end
-
-function update(host, port, spaceno, key, oplist)
-    -- TODO: handle oplist
-    return _tarantool_request(host, port, { [TYPE] = UPDATE }, { [SPACE_ID] = spaceno, [TUPLE] = oplist, [KEY] = prepare_key(key) })
-end
-
-function ping(host, port)
-    return _tarantool_request(host, port, { [ TYPE ] = PING }, {} )
-end
-
-function call(host, port, proc, args)
-    return _tarantool_request(host, port, { [ TYPE ] = CALL }, { [FUNCTION_NAME] = proc, [TUPLE] = args } )
-end
-
-local class_mt = {
-    __newindex = function (table, key, val)
-        error('attempt to write to undeclared variable "' .. key .. '"')
-    end
-}
-
-setmetatable(_M, class_mt)

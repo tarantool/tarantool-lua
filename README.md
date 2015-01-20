@@ -15,25 +15,36 @@ Synopsis
 
 ```lua
 
-local tarantool = require("tarantool")
+tarantool = require("tarantool")
 
-local host    = "127.0.0.1"
-local port    = 3301
-local spaceno = 1
-local indexno = 0
-local key     = { 1 }
-local tuple   = { "first field", "second field" }
+-- initialize connection
+local tar, err = tarantool:new()
 
-local result, err = tarantool.select(host, port, spaceno, indexno, key)
+local tar, err = tarantool:new({ connect_now = false })
+local ok, err = tar:connect()
 
-local result, err = tarantool.insert(host, port, spaceno, tuple)
+local tar, err = tarantool:new({
+    host           = '127.0.0.1',
+    port           = 3301,
+    user           = 'gg_tester',
+    password       = 'pass',
+    socket_timeout = 2000,
+    connect_now    = true,
+})
 
-local result, err = tarantool.replace(host, port, spaceno, tuple)
+-- requests
+local data, err = tar:ping()
+local data, err = tar:insert('profiles', { 1, "nick 1" })
+local data, err = tar:insert('profiles', { 2, "nick 2" })
+local data, err = tar:select(2, 0, 3)
+local data, err = tar:select('profiles', 'uid', 3)
+local data, err = tar:replace('profiles', {3, "nick 33"})
+local data, err = tar:delete('profiles', 3)
+local data, err = tar:update('profiles', 'uid', 3, {{ '=', 1, 'nick new' }})
+local data, err = tar:update('profiles', 'uid', 3, {{ '#', 1, 1 }})
 
-local result, err = tarantool.delete(host, port, spaceno, key)
-
-local result, err = tarantool.ping(host, port)
-
-local result, err = tarantool.call(host, port, "proc_name", { "first arg" })
+-- disconnect or set_keepalive at the end
+local ok, err = tar:disconnect()
+local ok, err = tar:set_keepalive()
 
 ```
