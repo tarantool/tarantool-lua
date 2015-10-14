@@ -2,9 +2,13 @@
 Tarantool 1.5 Connector for Lua
 ==========================================
 
-Tarantool connector for Lua.
+This is a Lua connector to Tarantool 1.5
 
-It Supports luajit, lua5.2 and lua5.1
+It Supports luajit, lua5.2 and lua5.1.
+
+In most cases, if you need to connect to Tarantool from Lua,
+you should switch to using Tarantool as your Lua interpreter instead.
+Tarantool has a connector http://tarantool.org/doc/book/box/net_box.html
 
 Everything is simple:
 
