@@ -1,5 +1,5 @@
 ==========================================
-tarantool-lua: Tarantool Connector for Lua
+Tarantool 1.5 Connector for Lua
 ==========================================
 
 Tarantool connector for Lua.
