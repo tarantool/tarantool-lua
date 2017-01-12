@@ -25,6 +25,8 @@ UPDATE     = 4
 DELETE     = 5
 CALL       = 6
 AUTH       = 7
+EVAL       = 8
+UPSERT     = 9
 PING       = 64
 ERROR_TYPE = 65536
 
@@ -40,6 +42,7 @@ KEY           = 0x20
 TUPLE         = 0x21
 FUNCTION_NAME = 0x22
 USER_NAME     = 0x23
+OPS           = 0x28
 DATA          = 0x30
 ERROR         = 0x31
 

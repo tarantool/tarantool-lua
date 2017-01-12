@@ -204,6 +204,26 @@ function update(self, space, index, key, oplist)
     end
 end
 
+function upsert(self, space, tuple, oplist)
+    local spaceno, err = self:_resolve_space(space)
+    if not spaceno then
+        return nil, err
+    end
+
+    local response, err = self:_request({ [C.TYPE] = C.UPSERT }, {
+            [C.SPACE_ID] = spaceno,
+            [C.TUPLE]    = tuple,
+            [C.OPS]      = oplist,
+        })
+    if err then
+        return nil, err
+    elseif response and response.code ~= C.OK then
+        return nil, (response and response.error or "Internal error")
+    else
+        return response.data
+    end
+end
+
 function ping(self)
     local response, err = self:_request({ [ C.TYPE ] = C.PING }, {} )
     if err then
