@@ -53,15 +53,25 @@ function new(self, params)
     return obj
 end
 
+function wraperr(self,err)
+    if err then
+        err = err .. ', server: ' .. self.host .. ':' .. self.port
+    end
+    return err
+end
+
 function connect(self, host, port)
     if not self.sock then
         return nil, "no socket created"
     end
-    local ok, err = self.sock:connect(host or self.host, tonumber(port or self.port))
-    if not ok then
-        return ok, err
-    end
 
+    self.host = host or self.host
+    self.port = tonumber(port or self.port)
+
+    local ok, err = self.sock:connect(self.host, self.port)
+    if not ok then
+        return ok, self:wraperr(err)
+    end
     return self:_handshake()
 end
 
@@ -124,7 +134,7 @@ function select(self, space, index, key, opts)
     if err then
         return nil, err
     elseif response and response.code ~= C.OK then
-        return nil, (response and response.error or "Internal error")
+        return nil, self:wraperr(response.error or "Internal error")
     else
         return response.data
     end
@@ -140,7 +150,7 @@ function insert(self, space, tuple)
     if err then
         return nil, err
     elseif response and response.code ~= C.OK then
-        return nil, (response and response.error or "Internal error")
+        return nil, self:wraperr(response.error or "Internal error")
     else
         return response.data
     end
@@ -156,7 +166,7 @@ function replace(self, space, tuple)
     if err then
         return nil, err
     elseif response and response.code ~= C.OK then
-        return nil, (response and response.error or "Internal error")
+        return nil, self:wraperr(response.error or "Internal error")
     else
         return response.data
     end
@@ -172,7 +182,7 @@ function delete(self, space, key)
     if err then
         return nil, err
     elseif response and response.code ~= C.OK then
-        return nil, (response and response.error or "Internal error")
+        return nil, self:wraperr(response.error or "Internal error")
     else
         return response.data
     end
@@ -198,7 +208,7 @@ function update(self, space, index, key, oplist)
     if err then
         return nil, err
     elseif response and response.code ~= C.OK then
-        return nil, (response and response.error or "Internal error")
+        return nil, self:wraperr(response.error or "Internal error")
     else
         return response.data
     end
@@ -218,7 +228,7 @@ function upsert(self, space, tuple, oplist)
     if err then
         return nil, err
     elseif response and response.code ~= C.OK then
-        return nil, (response and response.error or "Internal error")
+        return nil, self:wraperr(response.error or "Internal error")
     else
         return response.data
     end
@@ -229,7 +239,7 @@ function ping(self)
     if err then
         return nil, err
     elseif response and response.code ~= C.OK then
-        return nil, (response and response.error or "Internal error")
+        return nil, self:wraperr(response.error or "Internal error")
     else
         return "PONG"
     end
@@ -240,7 +250,7 @@ function call(self, proc, args)
     if err then
         return nil, err
     elseif response and response.code ~= C.OK then
-        return nil, (response and response.error or "Internal error")
+        return nil, self:wraperr(response.error or "Internal error")
     else
         return response.data
     end
@@ -298,7 +308,7 @@ function _handshake(self)
         greeting, greeting_err = self.sock:receive(C.GREETING_SIZE)
         if not greeting or greeting_err then
             self.sock:close()
-            return nil, greeting_err
+            return nil, self:wraperr(greeting_err)
         end
         self._salt = string.sub(greeting, C.GREETING_SALT_OFFSET + 1)
         self._salt = string.sub(ngx.decode_base64(self._salt), 1, 20)
@@ -319,7 +329,7 @@ function _authenticate(self)
     if err then
         return nil, err
     elseif response and response.code ~= C.OK then
-        return nil, (response and response.error or "Internal error")
+        return nil, self:wraperr(response.error or "Internal error")
     else
         return true
     end
@@ -342,34 +352,34 @@ function _request(self, header, body)
     local bytes, err = sock:send(request)
     if bytes == nil then
         sock:close()
-        return nil, "Failed to send request: " .. err
+        return nil, self:wraperr("Failed to send request: " .. err)
     end
 
     local size, err = sock:receive(C.HEAD_BODY_LEN_SIZE)
     if not size then
         sock:close()
-        return nil, "Failed to get response size: " .. err
+        return nil, self:wraperr("Failed to get response size: " .. err)
     end
 
     size = mp.unpack(size)
     if not size then
         sock:close()
-        return nil, "Client get response invalid size"
+        return nil, self:wraperr("Client get response invalid size")
     end
 
     local header_and_body, err = sock:receive(size)
     if not header_and_body then
         sock:close()
-        return nil,  "Failed to get response header and body: " .. err
+        return nil, self:wraperr("Failed to get response header and body: " .. err)
     end
 
     local iterator = mp.unpacker(header_and_body)
     local value, res_header = iterator()
     if type(res_header) ~= 'table' then
-        return nil, "Invalid header: " .. type(res_header) .. " (table expected)"
+        return nil, self:wraperr("Invalid header: " .. type(res_header) .. " (table expected)")
     end
     if res_header[C.SYNC] ~= self.sync_num then
-        return nil, "Invalid header SYNC: request: " .. self.sync_num .. " response: " .. res_header[C.SYNC]
+        return nil, self:wraperr("Invalid header SYNC: request: " .. self.sync_num .. " response: " .. res_header[C.SYNC])
     end
 
     local value, res_body = iterator()
