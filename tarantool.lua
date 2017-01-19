@@ -321,11 +321,19 @@ function _authenticate(self)
     if not self.user then
         return true
     end
-    local step_1   = ngx.sha1_bin(self.password)
-    local step_2   = ngx.sha1_bin(step_1)
-    local step_3   = ngx.sha1_bin(self._salt .. step_2)
-    local scramble = _xor(step_1, step_3)
-    local response, err = self:_request({ [C.TYPE] = C.AUTH }, { [C.USER_NAME] = self.user , [C.TUPLE] = { "chap-sha1", scramble } })
+
+    local rbody = { [C.USER_NAME] = self.user, [C.TUPLE] = { } }
+
+    local password = self.password or ''
+    if password ~= '' then
+        local step_1   = ngx.sha1_bin(self.password)
+        local step_2   = ngx.sha1_bin(step_1)
+        local step_3   = ngx.sha1_bin(self._salt .. step_2)
+        local scramble = _xor(step_1, step_3)
+        rbody[C.TUPLE] = { "chap-sha1",  scramble }
+    end
+
+    local response, err = self:_request({ [C.TYPE] = C.AUTH }, rbody)
     if err then
         return nil, err
     elseif response and response.code ~= C.OK then
