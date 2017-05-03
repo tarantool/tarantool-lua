@@ -8,6 +8,7 @@ local ngx    = ngx
 local type   = type
 local ipairs = ipairs
 local error  = error
+local string = string
 local socket
 local decode_base64
 local sha1_bin
@@ -16,7 +17,8 @@ local sha1_bin
 -- requires: luasock (implicit), lua-resty-socket, sha1
 
 if not ngx then
-  socket = require("resty.socket")
+  socket = require("socket")
+  socket.unix = require("socket.unix")
   local mime   = require("mime")
   decode_base64 = mime.unb64
   local sha1 = require("sha1")
@@ -61,6 +63,10 @@ function new(self, params)
     obj._indexes = {}
     obj = setmetatable(obj, { __index = self })
 
+    if not ngx then
+      obj.unix = socket.unix()
+    end
+
     if obj.connect_now then
         local ok, err = obj:connect()
         if not ok then
@@ -86,7 +92,20 @@ function connect(self, host, port)
     self.host = host or self.host
     self.port = tonumber(port or self.port)
 
-    local ok, err = self.sock:connect(self.host, self.port)
+    local ok, err
+    if string.find(self.host, 'unix:/') then
+      if ngx then
+        ok, err = self.sock:connect(self.host)
+      else
+        ok, err = self.unix:connect(string.match(self.host, 'unix:(.+)'))
+        if ok then
+          self.sock = self.unix
+        end
+      end
+    else
+      ok, err = self.sock:connect(self.host, self.port)
+    end
+
     if not ok then
         return ok, self:wraperr(err)
     end
