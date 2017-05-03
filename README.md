@@ -6,9 +6,17 @@ Driver for tarantool 1.6 on nginx cosockets
 Introduction
 ------------
 
-A driver for a NoSQL database in a Lua script [Tarantool](http://tarantool.org/) build on fast nginx cosockets.
+A pure Lua driver for the NoSQL database [Tarantool](http://tarantool.org/) using fast nginx cosockets when available, or [luasocket](https://github.com/diegonehab/luasocket) as a fallback.
 
 Requires [lua-MessagePack](https://github.com/fperrad/lua-MessagePack).
+
+luasock
+-------
+
+For `luasock` sockets, [lua-resty-socket](https://github.com/thibaultcha/lua-resty-socket) and [sha1.lua](https://github.com/kikito/sha1.lua) are required.
+
+These can be installed using `luarocks install lua-resty-socket sha1.lua`
+
 
 Synopsis
 ------------
