@@ -1,4 +1,4 @@
-lua-tarantool
+lua-tarantool-client
 ===================
 
 Driver for tarantool 1.7 on nginx cosockets and plain lua sockets
