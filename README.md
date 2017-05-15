@@ -1,7 +1,7 @@
-lua-nginx-tarantool
+lua-tarantool
 ===================
 
-Driver for tarantool 1.6 on nginx cosockets
+Driver for tarantool 1.7 on nginx cosockets and plain lua sockets
 
 Introduction
 ------------
