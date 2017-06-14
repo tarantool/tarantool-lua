@@ -7,9 +7,9 @@ type   = type
 ipairs = ipairs
 error  = error
 string = string
-socket
-decode_base64
-sha1_bin
+socket = nil
+decode_base64 = nil
+sha1_bin = nil
 
 -- Use non NGINX modules
 -- requires: luasock (implicit), lua-resty-socket, sha1
@@ -60,43 +60,41 @@ _prepare_key = (value) ->
 
 class Tarantool
   new: (params) =>
-    obj = {
+    @meta = {
       host:           C.HOST,
       port:           C.PORT,
       user:           C.USER,
       password:       C.PASSWORD,
       socket_timeout: C.SOCKET_TIMEOUT,
       connect_now:    C.CONNECT_NOW
+      _lookup_spaces: true
+      _lookup_indexes: true
+      _spaces: {}
+      _indexes: {}
     }
 
     if params and type(params) == 'table'
-      for key, value in pairs(obj) do
+      for key, value in pairs(@meta) do
         if params[key] != nil then
-          obj[key] = params[key]
+          @meta[key] = params[key]
+        self[key] = @meta[key]
 
     sock, err = socket.tcp()
     if not sock
-      return nil, err
+      @err = err
+      return
 
-    if obj.socket_timeout
-      sock\settimeout(obj.socket_timeout)
-
-    obj.sock     = sock
-    obj._lookup_spaces = true
-    obj._lookup_indexes = true
-    obj._spaces  = {}
-    obj._indexes = {}
-    obj = setmetatable(obj, { __index: self })
+    if @socket_timeout
+      sock\settimeout(@socket_timeout)
+    @sock = sock
 
     if not ngx
-      obj.unix = socket.unix()
+      @unix = socket.unix()
 
-    if obj.connect_now
-      ok, err = obj\connect()
+    if @connect_now
+      ok, err = @connect()
       if not ok
-        return nil, err
-
-    return obj
+        @err = err
 
   enable_lookups: () =>
     @_lookup_spaces = true
@@ -108,45 +106,46 @@ class Tarantool
     @_spaces = {}
     @_indexes = {}
 
-  wraperr: (err) =>
+  _wraperr: (err) =>
     if err then
-      err = err .. ', server: ' .. self.host .. ':' .. self.port
-    err
+      err .. ', server: ' .. @host .. ':' .. @port
+    else
+      "Internal error"
 
   connect: (host, port) =>
     if not @sock
-      return nil, "no socket created"
+      return nil, "No socket created"
 
-    self.host = host or self.host
-    self.port = tonumber(port or self.port)
+    @host = host or @host
+    @port = tonumber(port or @port)
 
     ok = nil
     err = nil
-    if string.find(self.host, 'unix:/')
+    if string.find(@host, 'unix:/')
       if ngx
-        ok, err = self.sock\connect(self.host)
+        ok, err = @sock\connect(@host)
       else
-        ok, err = self.unix\connect(string.match(self.host, 'unix:(.+)'))
+        ok, err = @unix\connect(string.match(@host, 'unix:(.+)'))
         if ok
-          self.sock = self.unix
+          @sock = @unix
     else
-      ok, err = self.sock\connect(self.host, self.port)
+      ok, err = @sock\connect(@host, @port)
 
     if not ok then
-      return ok, self:wraperr(err)
-    return self\_handshake()
+      return ok, @_wraperr(err)
+    return @_handshake()
 
   disconnect: () =>
-    if not self.sock
+    if not @sock
       return nil, "no socket created"
-    return self.sock\close()
+    return @sock\close()
 
   set_keepalive: () =>
-    if not self.sock
+    if not @sock
       return nil, "no socket created"
-    ok, err = self.sock\setkeepalive()
+    ok, err = @sock\setkeepalive()
     if not ok then
-      self\disconnect()
+      @disconnect()
       return nil, err
     return ok
 
@@ -154,7 +153,7 @@ class Tarantool
     if opts == nil
       opts = {}
 
-    spaceno, err = self:_resolve_space(space)
+    spaceno, err = @_resolve_space(space)
     if not spaceno
       return nil, err
 
@@ -184,7 +183,7 @@ class Tarantool
     if err
       return nil, err
     elseif response and response.code != C.OK
-      return nil, @wraperr(response.error or "Internal error")
+      return nil, @_wraperr(response.error)
     else
       return response.data
 
@@ -197,7 +196,7 @@ class Tarantool
     if err
       return nil, err
     elseif response and response.code != C.OK
-      return nil, @wraperr(response.error or "Internal error")
+      return nil, @_wraperr(response.error)
     else
       return response.data
 
@@ -210,7 +209,7 @@ class Tarantool
     if err
       return nil, err
     elseif response and response.code != C.OK then
-      return nil, @wraperr(response.error or "Internal error")
+      return nil, @_wraperr(response.error)
     else
       return response.data
 
@@ -223,7 +222,7 @@ class Tarantool
     if err
       return nil, err
     elseif response and response.code != C.OK
-      return nil, @wraperr(response.error or "Internal error")
+      return nil, @_wraperr(response.error)
     else
       return response.data
 
@@ -245,7 +244,7 @@ class Tarantool
     if err
       return nil, err
     elseif response and response.code != C.OK
-      return nil, @wraperr(response.error or "Internal error")
+      return nil, @_wraperr(response.error)
     else
       return response.data
 
@@ -263,7 +262,7 @@ class Tarantool
     if err
       return nil, err
     elseif response and response.code != C.OK
-      return nil, @wraperr(response.error or "Internal error")
+      return nil, @_wraperr(response.error)
     else
       return response.data
 
@@ -272,7 +271,7 @@ class Tarantool
     if err
       return nil, err
     elseif response and response.code != C.OK
-      return nil, @wraperr(response.error or "Internal error")
+      return nil, @_wraperr(response.error)
     else
       return "PONG"
 
@@ -281,7 +280,7 @@ class Tarantool
     if err
       return nil, err
     elseif response and response.code != C.OK
-      return nil, @wraperr(response.error or "Internal error")
+      return nil, @_wraperr(response.error)
     else
       return response.data
 
@@ -289,7 +288,7 @@ class Tarantool
     if type(space) == 'number' then
       return space
     elseif type(space) == 'string' then
-      if @lookup_spaces and @_spaces[space] then
+      if @_lookup_spaces and @_spaces[space] then
         return @_spaces[space]
     else
       return nil, 'Invalid space identificator: ' .. space
@@ -299,7 +298,7 @@ class Tarantool
       return nil, (err or 'Can\'t find space with identifier: ' .. space)
 
     newspace = data[1][1]
-    if @lookup_spaces
+    if @_lookup_spaces
       @_spaces[space] = newspace
     return newspace
 
@@ -321,7 +320,7 @@ class Tarantool
       return nil, (err or 'Can\'t find index with identifier: ' .. index)
 
     newindex = data[1][2]
-    if @lookup_indexes
+    if @_lookup_indexes
       @_indexes[index] = newindex
     return newindex
 
@@ -332,7 +331,7 @@ class Tarantool
       greeting, greeting_err = @sock\receive(C.GREETING_SIZE)
       if not greeting or greeting_err
         @sock\close()
-        return nil, @wraperr(greeting_err)
+        return nil, @_wraperr(greeting_err)
 
       @_salt = string.sub(greeting, C.GREETING_SALT_OFFSET + 1)
       @_salt = string.sub(decode_base64(@_salt), 1, 20)
@@ -358,7 +357,7 @@ class Tarantool
     if err
       return nil, err
     elseif response and response.code != C.OK
-      return nil, @wraperr(response.error or "Internal error")
+      return nil, @_wraperr(response.error)
     else
       return true
 
@@ -379,30 +378,30 @@ class Tarantool
 
     if bytes == nil then
       sock\close()
-      return nil, @wraperr("Failed to send request: " .. err)
+      return nil, @_wraperr("Failed to send request: " .. err)
 
-    size, err = @receive(C.HEAD_BODY_LEN_SIZE)
+    size, err = sock\receive(C.HEAD_BODY_LEN_SIZE)
     if not size
       sock\close()
-      return nil, @wraperr("Failed to get response size: " .. err)
+      return nil, @_wraperr("Failed to get response size: " .. err)
 
     size = mp.unpack(size)
     if size
-      sock:close()
-      return nil, @wraperr("Client get response invalid size")
+      sock\close()
+      return nil, @_wraperr("Client get response invalid size")
 
     header_and_body, err = sock\receive(size)
     if not header_and_body
       sock\close()
-      return nil, @wraperr("Failed to get response header and body: " .. err)
+      return nil, @_wraperr("Failed to get response header and body: " .. err)
 
     iterator = mp.unpacker(header_and_body)
     value, res_header = iterator()
     if type(res_header) != 'table' then
-      return nil, @wraperr("Invalid header: " .. type(res_header) .. " (table expected)")
+      return nil, @_wraperr("Invalid header: " .. type(res_header) .. " (table expected)")
 
-    if res_header[C.SYNC] != self.sync_num then
-      return nil, @wraperr("Invalid header SYNC: request: " .. self.sync_num .. " response: " .. res_header[C.SYNC])
+    if res_header[C.SYNC] != @sync_num then
+      return nil, @_wraperr("Invalid header SYNC: request: " .. @sync_num .. " response: " .. res_header[C.SYNC])
 
     value, res_body = iterator()
     if type(res_body) != 'table'

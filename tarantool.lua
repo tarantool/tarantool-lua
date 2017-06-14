@@ -7,19 +7,19 @@ local type = type
 local ipairs = ipairs
 local error = error
 string = string
-local _ = socket
-_ = decode_base64
-_ = sha1_bin
+local socket = nil
+local decode_base64 = nil
+local sha1_bin = nil
 if not ngx then
-  local socket = require("socket")
+  socket = require("socket")
   socket.unix = require("socket.unix")
   local mime = require("mime")
-  local decode_base64 = mime.unb64
-  local sha1_bin = require("crypto").sha1
+  decode_base64 = mime.unb64
+  sha1_bin = require("crypto").sha1
 else
-  local socket = ngx.socket
-  local decode_base64 = ngx.decode_base64
-  local sha1_bin = ngx.sha1_bin
+  socket = ngx.socket
+  decode_base64 = ngx.decode_base64
+  sha1_bin = ngx.sha1_bin
 end
 mp.set_integer('unsigned')
 local _prepare_request
@@ -79,15 +79,16 @@ do
       self._spaces = { }
       self._indexes = { }
     end,
-    wraperr = function(self, err)
+    _wraperr = function(self, err)
       if err then
-        err = err .. ', server: ' .. self.host .. ':' .. self.port
+        return err .. ', server: ' .. self.host .. ':' .. self.port
+      else
+        return "Internal error"
       end
-      return err
     end,
     connect = function(self, host, port)
       if not self.sock then
-        return nil, "no socket created"
+        return nil, "No socket created"
       end
       self.host = host or self.host
       self.port = tonumber(port or self.port)
@@ -106,9 +107,7 @@ do
         ok, err = self.sock:connect(self.host, self.port)
       end
       if not ok then
-        return ok, {
-          self = wraperr(err)
-        }
+        return ok, self:_wraperr(err)
       end
       return self:_handshake()
     end,
@@ -133,9 +132,7 @@ do
       if opts == nil then
         opts = { }
       end
-      local spaceno, err = {
-        self = _resolve_space(space)
-      }
+      local spaceno, err = self:_resolve_space(space)
       if not spaceno then
         return nil, err
       end
@@ -169,7 +166,7 @@ do
       if err then
         return nil, err
       elseif response and response.code ~= C.OK then
-        return nil, self:wraperr(response.error or "Internal error")
+        return nil, self:_wraperr(response.error)
       else
         return response.data
       end
@@ -189,7 +186,7 @@ do
       if err then
         return nil, err
       elseif response and response.code ~= C.OK then
-        return nil, self:wraperr(response.error or "Internal error")
+        return nil, self:_wraperr(response.error)
       else
         return response.data
       end
@@ -209,7 +206,7 @@ do
       if err then
         return nil, err
       elseif response and response.code ~= C.OK then
-        return nil, self:wraperr(response.error or "Internal error")
+        return nil, self:_wraperr(response.error)
       else
         return response.data
       end
@@ -229,7 +226,7 @@ do
       if err then
         return nil, err
       elseif response and response.code ~= C.OK then
-        return nil, self:wraperr(response.error or "Internal error")
+        return nil, self:_wraperr(response.error)
       else
         return response.data
       end
@@ -256,7 +253,7 @@ do
       if err then
         return nil, err
       elseif response and response.code ~= C.OK then
-        return nil, self:wraperr(response.error or "Internal error")
+        return nil, self:_wraperr(response.error)
       else
         return response.data
       end
@@ -277,7 +274,7 @@ do
       if err then
         return nil, err
       elseif response and response.code ~= C.OK then
-        return nil, self:wraperr(response.error or "Internal error")
+        return nil, self:_wraperr(response.error)
       else
         return response.data
       end
@@ -289,7 +286,7 @@ do
       if err then
         return nil, err
       elseif response and response.code ~= C.OK then
-        return nil, self:wraperr(response.error or "Internal error")
+        return nil, self:_wraperr(response.error)
       else
         return "PONG"
       end
@@ -304,7 +301,7 @@ do
       if err then
         return nil, err
       elseif response and response.code ~= C.OK then
-        return nil, self:wraperr(response.error or "Internal error")
+        return nil, self:_wraperr(response.error)
       else
         return response.data
       end
@@ -313,7 +310,7 @@ do
       if type(space) == 'number' then
         return space
       elseif type(space) == 'string' then
-        if self.lookup_spaces and self._spaces[space] then
+        if self._lookup_spaces and self._spaces[space] then
           return self._spaces[space]
         end
       else
@@ -324,7 +321,7 @@ do
         return nil, (err or 'Can\'t find space with identifier: ' .. space)
       end
       local newspace = data[1][1]
-      if self.lookup_spaces then
+      if self._lookup_spaces then
         self._spaces[space] = newspace
       end
       return newspace
@@ -352,7 +349,7 @@ do
         return nil, (err or 'Can\'t find index with identifier: ' .. index)
       end
       local newindex = data[1][2]
-      if self.lookup_indexes then
+      if self._lookup_indexes then
         self._indexes[index] = newindex
       end
       return newindex
@@ -364,7 +361,7 @@ do
         greeting, greeting_err = self.sock:receive(C.GREETING_SIZE)
         if not greeting or greeting_err then
           self.sock:close()
-          return nil, self:wraperr(greeting_err)
+          return nil, self:_wraperr(greeting_err)
         end
         self._salt = string.sub(greeting, C.GREETING_SALT_OFFSET + 1)
         self._salt = string.sub(decode_base64(self._salt), 1, 20)
@@ -398,7 +395,7 @@ do
       if err then
         return nil, err
       elseif response and response.code ~= C.OK then
-        return nil, self:wraperr(response.error or "Internal error")
+        return nil, self:_wraperr(response.error)
       else
         return true
       end
@@ -418,33 +415,32 @@ do
       local bytes, err = sock:send(request)
       if bytes == nil then
         sock:close()
-        return nil, self:wraperr("Failed to send request: " .. err)
+        return nil, self:_wraperr("Failed to send request: " .. err)
       end
       local size
-      size, err = self:receive(C.HEAD_BODY_LEN_SIZE)
+      size, err = sock:receive(C.HEAD_BODY_LEN_SIZE)
       if not size then
         sock:close()
-        return nil, self:wraperr("Failed to get response size: " .. err)
+        return nil, self:_wraperr("Failed to get response size: " .. err)
       end
       size = mp.unpack(size)
-      if size({
-        sock = close()
-      }) then
-        return nil, self:wraperr("Client get response invalid size")
+      if size then
+        sock:close()
+        return nil, self:_wraperr("Client get response invalid size")
       end
       local header_and_body
       header_and_body, err = sock:receive(size)
       if not header_and_body then
         sock:close()
-        return nil, self:wraperr("Failed to get response header and body: " .. err)
+        return nil, self:_wraperr("Failed to get response header and body: " .. err)
       end
       local iterator = mp.unpacker(header_and_body)
       local value, res_header = iterator()
       if type(res_header) ~= 'table' then
-        return nil, self:wraperr("Invalid header: " .. type(res_header) .. " (table expected)")
+        return nil, self:_wraperr("Invalid header: " .. type(res_header) .. " (table expected)")
       end
       if res_header[C.SYNC] ~= self.sync_num then
-        return nil, self:wraperr("Invalid header SYNC: request: " .. self.sync_num .. " response: " .. res_header[C.SYNC])
+        return nil, self:_wraperr("Invalid header SYNC: request: " .. self.sync_num .. " response: " .. res_header[C.SYNC])
       end
       local res_body
       value, res_body = iterator()
@@ -461,47 +457,45 @@ do
   _base_0.__index = _base_0
   _class_0 = setmetatable({
     __init = function(self, params)
-      local obj = {
+      self.meta = {
         host = C.HOST,
         port = C.PORT,
         user = C.USER,
         password = C.PASSWORD,
         socket_timeout = C.SOCKET_TIMEOUT,
-        connect_now = C.CONNECT_NOW
+        connect_now = C.CONNECT_NOW,
+        _lookup_spaces = true,
+        _lookup_indexes = true,
+        _spaces = { },
+        _indexes = { }
       }
       if params and type(params) == 'table' then
-        for key, value in pairs(obj) do
+        for key, value in pairs(self.meta) do
           if params[key] ~= nil then
-            obj[key] = params[key]
+            self.meta[key] = params[key]
           end
+          self[key] = self.meta[key]
         end
       end
       local sock, err = socket.tcp()
       if not sock then
-        return nil, err
+        self.err = err
+        return 
       end
-      if obj.socket_timeout then
-        sock:settimeout(obj.socket_timeout)
+      if self.socket_timeout then
+        sock:settimeout(self.socket_timeout)
       end
-      obj.sock = sock
-      obj._lookup_spaces = true
-      obj._lookup_indexes = true
-      obj._spaces = { }
-      obj._indexes = { }
-      obj = setmetatable(obj, {
-        __index = self
-      })
+      self.sock = sock
       if not ngx then
-        obj.unix = socket.unix()
+        self.unix = socket.unix()
       end
-      if obj.connect_now then
+      if self.connect_now then
         local ok
-        ok, err = obj:connect()
+        ok, err = self:connect()
         if not ok then
-          return nil, err
+          self.err = err
         end
       end
-      return obj
     end,
     __base = _base_0,
     __name = "Tarantool"
