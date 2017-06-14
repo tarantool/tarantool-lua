@@ -1,0 +1,1 @@
+: foreach *.moon |> moonc -o %B.lua %f |> %B.lua
