@@ -10,12 +10,22 @@ string = string
 local socket = nil
 local decode_base64 = nil
 local sha1_bin = nil
+local crypto = nil
+local openssl_sha1_hash
+openssl_sha1_hash = function(msg)
+  return crypto.digest('sha1', msg, true)
+end
 if not ngx then
   socket = require("socket")
   socket.unix = require("socket.unix")
   local mime = require("mime")
   decode_base64 = mime.unb64
-  sha1_bin = require("crypto").sha1
+  crypto = require("crypto")
+  if crypto.sha1 then
+    print("This version of SHA1 is text only and is not supported")
+  else
+    sha1_bin = openssl_sha1_hash
+  end
 else
   socket = ngx.socket
   decode_base64 = ngx.decode_base64
@@ -365,8 +375,9 @@ do
         end
         self._salt = string.sub(greeting, C.GREETING_SALT_OFFSET + 1)
         self._salt = string.sub(decode_base64(self._salt), 1, 20)
-        self.authenticated = self:_authenticate()
-        return self.authenticated
+        local err
+        self.authenticated, err = self:_authenticate()
+        return self.authenticated, err
       end
       return true
     end,
@@ -424,7 +435,7 @@ do
         return nil, self:_wraperr("Failed to get response size: " .. err)
       end
       size = mp.unpack(size)
-      if size then
+      if not size then
         sock:close()
         return nil, self:_wraperr("Client get response invalid size")
       end
@@ -493,6 +504,7 @@ do
         local ok
         ok, err = self:connect()
         if not ok then
+          print(err)
           self.err = err
         end
       end

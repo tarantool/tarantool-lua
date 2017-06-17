@@ -10,16 +10,24 @@ string = string
 socket = nil
 decode_base64 = nil
 sha1_bin = nil
+crypto = nil
 
 -- Use non NGINX modules
 -- requires: luasock (implicit), lua-resty-socket, sha1
+
+openssl_sha1_hash = (msg) ->
+  crypto.digest('sha1', msg, true)
 
 if not ngx then
   socket = require("socket")
   socket.unix = require("socket.unix")
   mime   = require("mime")
   decode_base64 = mime.unb64
-  sha1_bin = require("crypto").sha1
+  crypto = require("crypto")
+  if crypto.sha1
+    print "This version of SHA1 is text only and is not supported"
+  else
+    sha1_bin = openssl_sha1_hash
 else
   socket = ngx.socket
   decode_base64 = ngx.decode_base64
@@ -94,6 +102,7 @@ class Tarantool
     if @connect_now
       ok, err = @connect()
       if not ok
+        print(err)
         @err = err
 
   enable_lookups: () =>
@@ -335,8 +344,8 @@ class Tarantool
 
       @_salt = string.sub(greeting, C.GREETING_SALT_OFFSET + 1)
       @_salt = string.sub(decode_base64(@_salt), 1, 20)
-      @authenticated = @_authenticate()
-      return @authenticated
+      @authenticated, err = @_authenticate()
+      return @authenticated, err
     return true
 
   _authenticate: () =>
@@ -386,7 +395,7 @@ class Tarantool
       return nil, @_wraperr("Failed to get response size: " .. err)
 
     size = mp.unpack(size)
-    if size
+    if not size
       sock\close()
       return nil, @_wraperr("Client get response invalid size")
 
