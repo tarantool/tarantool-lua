@@ -313,7 +313,7 @@ do
       elseif response and response.code ~= C.OK then
         return nil, self:_wraperr(response.error)
       else
-        return response.data
+        return response.data[1]
       end
     end,
     _resolve_space = function(self, space)

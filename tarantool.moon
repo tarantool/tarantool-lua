@@ -291,7 +291,7 @@ class Tarantool
     elseif response and response.code != C.OK
       return nil, @_wraperr(response.error)
     else
-      return response.data
+      return response.data[1]
 
   _resolve_space: (space) =>
     if type(space) == 'number' then
