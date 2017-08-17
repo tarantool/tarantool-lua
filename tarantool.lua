@@ -147,7 +147,7 @@ do
         return nil, err
       end
       local indexno
-      indexno, err = self:_resolve_index(spaceno, index)
+      indexno, err = self:_resolve_index(spaceno, index or "primary")
       if not indexno then
         return nil, err
       end
@@ -313,7 +313,7 @@ do
       elseif response and response.code ~= C.OK then
         return nil, self:_wraperr(response.error)
       else
-        return response.data[1]
+        return unpack(response.data)
       end
     end,
     _resolve_space = function(self, space)

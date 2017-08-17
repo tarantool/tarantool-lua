@@ -166,7 +166,7 @@ class Tarantool
     if not spaceno
       return nil, err
 
-    indexno, err = @_resolve_index(spaceno, index)
+    indexno, err = @_resolve_index(spaceno, index or "primary")
     if not indexno
       return nil, err
 
@@ -291,7 +291,7 @@ class Tarantool
     elseif response and response.code != C.OK
       return nil, @_wraperr(response.error)
     else
-      return response.data[1]
+      return unpack(response.data)
 
   _resolve_space: (space) =>
     if type(space) == 'number' then
