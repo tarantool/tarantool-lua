@@ -55,6 +55,10 @@ SPACE_USER    = 304
 SPACE_PRIV    = 312
 SPACE_CLUSTER = 320
 
+-- default views
+VIEW_SPACE    = 281
+VIEW_INDEX    = 289
+
 -- index info
 INDEX_SPACE_PRIMARY = 0
 INDEX_SPACE_NAME    = 2
