@@ -302,7 +302,7 @@ class Tarantool
     else
       return nil, 'Invalid space identificator: ' .. space
 
-    data, err = @select(C.SPACE_SPACE, C.INDEX_SPACE_NAME, space)
+    data, err = @select(C.VIEW_SPACE, C.INDEX_SPACE_NAME, space)
     if not data or not data[1] or not data[1][1] or err then
       return nil, (err or 'Can\'t find space with identifier: ' .. space)
 
@@ -324,7 +324,7 @@ class Tarantool
     if not spaceno
       return nil, err
 
-    data, err = @select(C.SPACE_INDEX, C.INDEX_INDEX_NAME, { spaceno, index })
+    data, err = @select(C.VIEW_INDEX, C.INDEX_INDEX_NAME, { spaceno, index })
     if not data or not data[1] or not data[1][2] or err
       return nil, (err or 'Can\'t find index with identifier: ' .. index)
 

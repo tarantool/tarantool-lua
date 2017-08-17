@@ -326,7 +326,7 @@ do
       else
         return nil, 'Invalid space identificator: ' .. space
       end
-      local data, err = self:select(C.SPACE_SPACE, C.INDEX_SPACE_NAME, space)
+      local data, err = self:select(C.VIEW_SPACE, C.INDEX_SPACE_NAME, space)
       if not data or not data[1] or not data[1][1] or err then
         return nil, (err or 'Can\'t find space with identifier: ' .. space)
       end
@@ -351,7 +351,7 @@ do
         return nil, err
       end
       local data
-      data, err = self:select(C.SPACE_INDEX, C.INDEX_INDEX_NAME, {
+      data, err = self:select(C.VIEW_INDEX, C.INDEX_INDEX_NAME, {
         spaceno,
         index
       })
