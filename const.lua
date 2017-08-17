@@ -55,6 +55,7 @@ return {
   SPACE_PRIV    = 312,
   SPACE_CLUSTER = 320,
 
+  -- default views
   VIEW_SPACE    = 281,
   VIEW_INDEX    = 289,
 

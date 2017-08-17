@@ -26,12 +26,7 @@ Synopsis
 tarantool = require("tarantool")
 
 -- initialize connection
-local tar, err = tarantool:new()
-
-local tar, err = tarantool:new({ connect_now = false })
-local ok, err = tar:connect()
-
-local tar, err = tarantool:new({
+local tar = tarantool({
     host           = '127.0.0.1',
     port           = 3301,
     user           = 'gg_tester',
