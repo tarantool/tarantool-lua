@@ -231,7 +231,7 @@ do
         return response.data
       end
     end,
-    update = function(self, index, key, oplist)
+    update = function(self, space, index, key, oplist)
       local spaceno, err = self:_resolve_space(space)
       if not spaceno then
         return nil, err

@@ -227,7 +227,7 @@ class Tarantool
     else
       return response.data
 
-  update: (index, key, oplist) =>
+  update: (space, index, key, oplist) =>
     spaceno, err = @_resolve_space(space)
     if not spaceno
       return nil, err
