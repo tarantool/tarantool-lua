@@ -17,7 +17,7 @@ dependencies = {
   "lua ~> 5.1",
   "lua-messagepack",
   "lua-resty-socket",
-  "luacrypto"
+  "sha1"
 }
 
 build = {

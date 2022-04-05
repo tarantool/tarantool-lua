@@ -10,22 +10,12 @@ string = string
 local socket = nil
 local decode_base64 = nil
 local sha1_bin = nil
-local crypto = nil
-local openssl_sha1_hash
-openssl_sha1_hash = function(msg)
-  return crypto.digest('sha1', msg, true)
-end
 if not ngx then
   socket = require("socket")
   socket.unix = require("socket.unix")
   local mime = require("mime")
   decode_base64 = mime.unb64
-  crypto = require("crypto")
-  if crypto.sha1 then
-    print("This version of SHA1 is text only and is not supported")
-  else
-    sha1_bin = openssl_sha1_hash
-  end
+  sha1_bin = require("sha1").binary
 else
   socket = ngx.socket
   decode_base64 = ngx.decode_base64

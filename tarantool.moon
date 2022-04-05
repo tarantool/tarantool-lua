@@ -10,24 +10,16 @@ string = string
 socket = nil
 decode_base64 = nil
 sha1_bin = nil
-crypto = nil
 
 -- Use non NGINX modules
 -- requires: luasock (implicit), lua-resty-socket, sha1
-
-openssl_sha1_hash = (msg) ->
-  crypto.digest('sha1', msg, true)
 
 if not ngx then
   socket = require("socket")
   socket.unix = require("socket.unix")
   mime   = require("mime")
   decode_base64 = mime.unb64
-  crypto = require("crypto")
-  if crypto.sha1
-    print "This version of SHA1 is text only and is not supported"
-  else
-    sha1_bin = openssl_sha1_hash
+  sha1_bin = require("sha1").binary
 else
   socket = ngx.socket
   decode_base64 = ngx.decode_base64
