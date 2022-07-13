@@ -51,3 +51,18 @@ local ok, err = tar:disconnect()
 local ok, err = tar:set_keepalive()
 
 ```
+
+Hacking
+-------
+
+Module contains implementations written in Lua and
+[Moonscript][moonscript-url]. First one could be generated using second one
+using the Moonscript compiler:
+
+```sh
+$ luarocks --local install moonscript
+$ export PATH=$PATH:$(luarocks path --lr-bin)
+$ moonc -o tarantool.lua tarantool.moon
+```
+
+[moonscript-url]: https://moonscript.org/
